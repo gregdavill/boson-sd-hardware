@@ -1,0 +1,91 @@
+(DELAYFILE
+ (SDFVERSION "2.1")
+ (DESIGN "testbench_s27ks0641_verilog")
+ (DATE "Wed June 24 09:26:18 2015")
+ (VENDOR "Free Model Foundry")
+ (PROGRAM "SDF timing utility(tm)")
+ (VERSION "2.0.3")
+ (DIVIDER /)
+ (VOLTAGE 1.7:1.8:1.95)
+ (PROCESS)
+ (TEMPERATURE -40:25:85)
+ (TIMESCALE 1ns)
+ (CELL
+  (CELLTYPE "s27ks0641")
+  (INSTANCE s27ks0641)
+  (DELAY (ABSOLUTE
+    (IOPATH CSNeg DQ0 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ1 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ2 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ3 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ4 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ5 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ6 () () (2:4:6) () (2:4:6) ())
+    (IOPATH CSNeg DQ7 () () (2:4:6) () (2:4:6) ())
+
+    (IOPATH CSNeg RWDS () () (2:4:6) () (2:4:6) ())
+
+    (IOPATH CK DQ0 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ1 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ2 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ3 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ4 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ5 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ6 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+    (IOPATH CK DQ7 (3.95:4.45:5.95) (3.95:4.45:5.95) () (3.95:4.45:5.95) () (3.95:4.45:5.95))
+
+    (COND (~glitch_rwds && ~REFCOLL) (IOPATH CK RWDS (3.5:4:5.5) (3.5:4:5.5) () () () ()))
+    (COND (~glitch_rwdsR && REFCOLL) (IOPATH CK RWDS () () () (2:4:6) () (2:4:6)))
+
+  ))
+  (TIMINGCHECK
+
+    (SETUP CSNeg CK (3))
+
+    (SETUP  DQ0 CK (0.6))
+    (SETUP  DQ1 CK (0.6))
+    (SETUP  DQ2 CK (0.6))
+    (SETUP  DQ3 CK (0.6))
+    (SETUP  DQ4 CK (0.6))
+    (SETUP  DQ5 CK (0.6))
+    (SETUP  DQ6 CK (0.6))
+    (SETUP  DQ7 CK (0.6))
+
+    (HOLD CSNeg RESETNeg (200))
+
+    (HOLD CSNeg CK (0))
+
+    (HOLD DQ0 CK (0.6))
+    (HOLD DQ1 CK (0.6))
+    (HOLD DQ2 CK (0.6))
+    (HOLD DQ3 CK (0.6))
+    (HOLD DQ4 CK (0.6))
+    (HOLD DQ5 CK (0.6))
+    (HOLD DQ6 CK (0.6))
+    (HOLD DQ7 CK (0.6))
+
+    (RECOVERY (posedge CSNeg) (negedge CK) (36))
+
+    (SKEW (negedge CSNeg) (posedge CSNeg) (4000))
+
+    (WIDTH (negedge CK) (2.7))
+    (WIDTH (posedge CK) (2.7))
+    (WIDTH (posedge CSNeg) (6))
+    (WIDTH (negedge RESETNeg) (200))
+
+    (PERIOD  CK (6))
+ ))
+ (CELL
+  (CELLTYPE "BUFFER")
+  (INSTANCE s27ks0641/BUF_RWDS)
+  (DELAY (ABSOLUTE (DEVICE OUT (3.5:4:5.5)))))
+ (CELL
+  (CELLTYPE "BUFFER")
+  (INSTANCE s27ks0641/BUF_RWDSR)
+  (DELAY (ABSOLUTE (DEVICE OUT (2:4:6)))))
+ (CELL
+  (CELLTYPE "BUFFER")
+  (INSTANCE s27ks0641/BUF_DOut)
+  (DELAY (ABSOLUTE (DEVICE OUT (3.95:4.45:5.95))))
+ )
+)

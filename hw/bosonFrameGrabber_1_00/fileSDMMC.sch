@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:bosonFrameGrabber-cache
 EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
@@ -58,6 +59,7 @@ F 1 "MicroSD" H 5400 4500 50  0000 C CNN
 F 2 "bosonFrameGrabber:1040310811" H 5650 3850 50  0001 C CNN
 F 3 "~" H 5650 3850 50  0001 C CNN
 F 4 " WM6357CT-ND" H 5650 3850 60  0001 C CNN "SN-DK"
+F 5 "1040310811" H 0   0   50  0001 C CNN "PN"
 	1    5650 3850
 	-1   0    0    -1  
 $EndComp

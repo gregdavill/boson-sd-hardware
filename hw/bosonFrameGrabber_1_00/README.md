@@ -1,6 +1,7 @@
 # bosonFrameGrabber
 
 	Project Stage: VERY Early Development
+	Bad footprint for HyperRam, use v1_01.
 
 A Small FPGA based board. Designed to connect to a FLIR Boson Camera, and save images from the camera to a microSD card.
 

@@ -1,0 +1,36 @@
+{
+    "configurations": [
+        {
+            "name": "Mark3",
+            "includePath": [
+                "${workspaceRoot}/include/atmel",
+				"${workspaceRoot}/include/CMSIS/include",
+				"${workspaceRoot}/src/ClockController",
+				"${workspaceRoot}/src/Adafruit-GFX-Library",
+				"C:/Users/gregd/AppData/Local/lxss/rootfs/usr/lib/gcc/arm-none-eabi/6.3.1/include",
+				"C:/Users/gregd/AppData/Local/lxss/rootfs/usr/lib/gcc/arm-none-eabi/6.3.1/include-fixed",
+				"C:/Users/gregd/AppData/Local/lxss/rootfs/usr/arm-none-eabi/include",
+                "${workspaceRoot}"
+            ],
+            "defines": [
+				"__SAMD11D14AM__",
+				"__VS_CODE__",
+				"uint8_t=unsigned char",
+				"uint16_t=unsigned int"
+			],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+					"C:\\Users\\gregd\\AppData\\Local\\lxss\\rootfs\\usr\\arm-none-eabi\\include",
+					"${workspaceRoot}/include/atmel",
+					"${workspaceRoot}/include/CMSIS/include",
+                    "${workspaceRoot}"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 3
+}
+

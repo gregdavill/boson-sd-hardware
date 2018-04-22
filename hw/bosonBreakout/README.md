@@ -1,6 +1,7 @@
 # bosonBreakout
 
 	Project Stage: VERY Early Development
+	!!! Note this design has an incorrect HyperRam footprint !!!
 
 (Initially a project called: CrushedICE)
 

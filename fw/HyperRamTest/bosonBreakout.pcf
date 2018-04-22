@@ -1,0 +1,58 @@
+# ##############################################################################
+
+# iCEcube PCF
+
+# Version:            2017.08.27940
+
+# File Generated:     Apr 15 2018 22:09:33
+
+# Family & Device:    iCE5LP4K
+
+# Package:            SG48
+
+# ##############################################################################
+
+###IOSet List 15
+
+#   ---  HYPERBUS 8bit DDR INTERFACE  ---   #
+set_io HRAM_CK[0] 25 -io_std SB_LVCMOS -pullup no
+set_io HRAM_CK[1] 23 -io_std SB_LVCMOS -pullup no
+
+set_io HRAM_RWDS 35 -io_std SB_LVCMOS -pullup no
+set_io HRAM_CS 26 -io_std SB_LVCMOS -pullup no
+
+set_io HRAM_DQ[0] 32 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[1] 28 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[2] 37 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[3] 36 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[4] 38 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[5] 34 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[6] 31 -io_std SB_LVCMOS -pullup no
+set_io HRAM_DQ[7] 27 -io_std SB_LVCMOS -pullup no
+
+
+#   ---  BOSON CMOS CAMERA INTERFACE  ---   #
+set_io CAM_CMOS_VALID 42 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_CLK   45 -io_std SB_LVCMOS -pullup no
+
+set_io CAM_CMOS_D[0]  43 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[1]  44 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[2]  47 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[3]  46 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[4]  11 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[5]  13 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[6]  12 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[7]  10 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[8]  18 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[9]   3 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[10]  4 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[11]  2 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[12] 48 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[13]  6 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[14] 19 -io_std SB_LVCMOS -pullup no
+set_io CAM_CMOS_D[15]  9 -io_std SB_LVCMOS -pullup no
+
+
+set_io LED_A 39
+set_io LED_B 40
+set_io LED_C 41
