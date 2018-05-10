@@ -35,8 +35,8 @@ hx8kprog_fw: firmware.bin
 
 # ---- Example Firmware ----
 
-firmware.elf: sections.lds start.s firmware.c ../FatFs/ff.c ../FatFs/ff.h ../FatFs/ffconf.h ../FatFs/sdmmc.c ../FatFs/diskio.h ../FatFs/rb_tree.c ../FatFs/sd_cache.c
-	riscv32-unknown-elf-gcc -march=rv32i -Wl,-Bstatic,-T,sections.lds,--strip-debug,--no-check-sections -Wall -fpack-struct -nostartfiles -I../FatFs/ -o firmware.elf start.s firmware.c ../FatFs/ff.c ../FatFs/sdmmc.c ../FatFs/rb_tree.c ../FatFs/sd_cache.c
+firmware.elf: sections.lds start.s firmware.c ../FatFs/ff.c ../FatFs/ff.h ../FatFs/ffconf.h ../FatFs/sdmmc.c ../FatFs/diskio.h ../FatFs/rb_tree.c ../FatFs/sd_cache.c ../FatFs/ffunicode.c
+	riscv32-unknown-elf-gcc -march=rv32i -Wl,-Bstatic,-T,sections.lds,--strip-debug,--no-check-sections -Wall -fpack-struct -nostartfiles -I../FatFs/ -o firmware.elf start.s firmware.c ../FatFs/ff.c ../FatFs/sdmmc.c ../FatFs/rb_tree.c ../FatFs/sd_cache.c ../FatFs/ffunicode.c
 
 firmware.hex: firmware.elf
 	riscv32-unknown-elf-objcopy -O verilog firmware.elf firmware.hex
