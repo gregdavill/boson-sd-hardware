@@ -42,10 +42,10 @@ module picosoc (
 	input  ser_rx,
 
 
-	output spi_ck,
-	output spi_mosi,
-	input  spi_miso,
-	output spi_cs,
+//	output spi_ck,
+//	output spi_mosi,
+//	input  spi_miso,
+//	output spi_cs,
 
 	output flash_csb,
 	output flash_clk,
@@ -112,22 +112,12 @@ module picosoc (
 	wire        simpleuart_reg_dat_wait;
 
 
-	wire        simplespi_reg_div_sel = mem_valid && (mem_addr == 32'h 0200_0010);
-	wire [31:0] simplespi_reg_div_do;
-	wire        simplespi_reg_conf_sel = mem_valid && (mem_addr == 32'h 0200_0014);
-	wire [31:0] simplespi_reg_conf_do;
-
-	wire        simplespi_reg_dat_sel = mem_valid && (mem_addr == 32'h 0200_0018);
-	wire [31:0] simplespi_reg_dat_do;
-
 	assign mem_ready = (iomem_valid && iomem_ready) || spimem_ready || ram_ready || spimemio_cfgreg_sel ||
-			simpleuart_reg_div_sel || (simpleuart_reg_dat_sel && !simpleuart_reg_dat_wait) || 
-			simplespi_reg_div_sel || simplespi_reg_conf_sel || simplespi_reg_dat_sel;
+			simpleuart_reg_div_sel || (simpleuart_reg_dat_sel && !simpleuart_reg_dat_wait);
 
 	assign mem_rdata = (iomem_valid && iomem_ready) ? iomem_rdata : spimem_ready ? spimem_rdata : ram_ready ? ram_rdata :
 			spimemio_cfgreg_sel ? spimemio_cfgreg_do : simpleuart_reg_div_sel ? simpleuart_reg_div_do :
-			simpleuart_reg_dat_sel ? simpleuart_reg_dat_do : simplespi_reg_div_sel ? simplespi_reg_div_do :
-			simplespi_reg_dat_sel ? simplespi_reg_dat_do : simplespi_reg_conf_sel ? simplespi_reg_conf_do : 32'h 0000_0000;
+			simpleuart_reg_dat_sel ? simpleuart_reg_dat_do : 32'h 0000_0000;
 
 	picorv32 #(
 		.STACKADDR(STACKADDR),
@@ -201,27 +191,6 @@ module picosoc (
 		.reg_dat_di  (mem_wdata),
 		.reg_dat_do  (simpleuart_reg_dat_do),
 		.reg_dat_wait(simpleuart_reg_dat_wait)
-	);
-
-	simplespi simplespi (
-		.clk         (clk         ),
-		.resetn      (resetn      ),
-
-		.spi_clk     (spi_ck      ),
-		.spi_mosi    (spi_mosi    ),
-		.spi_miso    (spi_miso    ),
-
-		.reg_div_we  (simplespi_reg_div_sel ? mem_wstrb : 4'b 0000),
-		.reg_div_di  (mem_wdata),
-		.reg_div_do  (simplespi_reg_div_do),
-
-		.reg_conf_we  (simplespi_reg_conf_sel ? mem_wstrb : 4'b 0000),
-		.reg_conf_di  (mem_wdata),
-		.reg_conf_do  (simplespi_reg_conf_do),
-
-		.reg_dat_we  (simplespi_reg_dat_sel ? mem_wstrb[0] : 1'b 0),
-		.reg_dat_di  (mem_wdata),
-		.reg_dat_do  (simplespi_reg_dat_do)
 	);
 
 	always @(posedge clk)

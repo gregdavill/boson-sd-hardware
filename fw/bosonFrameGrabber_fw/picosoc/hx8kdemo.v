@@ -253,7 +253,23 @@ module hx8kdemo (
 		end
 	end
 
+
+	/* Patch in SPI module */
+	wire [31:0] mem_rdata = simplespi_reg_conf_sel ? 	simplespi_conf_o :
+					 simplespi_reg_dat_sel  ? 	simplespi_data_o :
+					 							iomem_rdata;
+
+	wire mem_ready = spi_en ? 1'b1 :
+							  iomem_ready;
 	
+
+	wire spi_dma_en_o;
+	wire spi_dma_rd_o;
+	wire [31:0] spi_dma_addr_o;
+	wire [31:0] spi_dma_rdata_i = rd_d;
+	wire spi_dma_rdata_rdy_i = rd_rdy;
+
+
 
 	picosoc soc (
 		.clk          (clk         ),
@@ -262,9 +278,9 @@ module hx8kdemo (
 		.ser_tx       (ser_tx      ),
 		.ser_rx       (ser_rx      ),
 
-		.spi_ck	      (sd_spi_ck   ),
-		.spi_mosi     (sd_spi_mosi ),
-		.spi_miso     (sd_spi_miso ),
+		//.spi_ck	      (sd_spi_ck   ),
+		//.spi_mosi     (sd_spi_mosi ),
+		//.spi_miso     (sd_spi_miso ),
 		
 		.flash_csb    (flash_csb   ),
 		.flash_clk    (flash_clk   ),
@@ -289,13 +305,60 @@ module hx8kdemo (
 		.irq_7        (1'b0        ),
 
 		.iomem_valid  (iomem_valid ),
-		.iomem_ready  (iomem_ready ),
+		.iomem_ready  (mem_ready ),
 		.iomem_wstrb  (iomem_wstrb ),
 		.iomem_addr   (iomem_addr  ),
 		.iomem_wdata  (iomem_wdata ),
-		.iomem_rdata  (iomem_rdata )
+		.iomem_rdata  (mem_rdata )
 	);
 
+
+	wire        simplespi_reg_div_sel =   iomem_valid && (iomem_addr == 32'h 0300_0020);
+	wire        simplespi_reg_conf_sel =  iomem_valid && (iomem_addr == 32'h 0300_0024);
+	wire        simplespi_reg_dat_sel =   iomem_valid && (iomem_addr == 32'h 0300_0028);
+	wire        simplespi_reg_count_sel = iomem_valid && (iomem_addr == 32'h 0300_002C);
+	wire        simplespi_reg_addr_sel =  iomem_valid && (iomem_addr == 32'h 0300_0030);
+
+	wire [31:0] simplespi_conf_o;
+	wire [31:0] simplespi_data_o;
+
+
+	wire spi_en = simplespi_reg_div_sel | simplespi_reg_conf_sel | simplespi_reg_dat_sel | simplespi_reg_count_sel | simplespi_reg_addr_sel;
+
+
+
+	simplespi simplespi (
+		.clk         (clk         ),
+		.resetn      (resetn      ),
+
+		.spi_clk     (sd_spi_ck      ),
+		.spi_mosi    (sd_spi_mosi    ),
+		.spi_miso    (sd_spi_miso    ),
+
+		.reg_div_we  (simplespi_reg_div_sel ? iomem_wstrb : 4'b 0000),
+		.reg_div_di  (iomem_wdata),
+
+		.reg_conf_we  (simplespi_reg_conf_sel ? iomem_wstrb : 4'b 0000),
+		.reg_conf_di  (iomem_wdata),
+		.reg_conf_do  (simplespi_conf_o),
+
+		.reg_dat_we  (simplespi_reg_dat_sel ? iomem_wstrb : 4'b 0000),
+		.reg_dat_di  (iomem_wdata),
+		.reg_dat_do  (simplespi_data_o),
+
+		.reg_count_we    (simplespi_reg_count_sel ? iomem_wstrb : 4'b 0000),
+		.reg_count_i     (iomem_wdata),
+
+		.reg_addr_we     (simplespi_reg_addr_sel ? iomem_wstrb : 4'b 0000),
+		.reg_addr_i      (iomem_wdata),
+
+		.dma_en_o        (spi_dma_en_o),
+		.dma_addr_o      (spi_dma_addr_o),
+		.dma_rd_o        (spi_dma_rd_o),
+		.dma_rdata_rdy_i (spi_dma_rdata_rdy_i),
+		.dma_rdata_i     (spi_dma_rdata_i),
+		.dma_busy_i		 (busy)
+	);
 
 	reg rd_jk;
 	reg rd_latch;
@@ -329,14 +392,18 @@ module hx8kdemo (
 
 	wire wr_req_;
 	wire [31:0] wr_d_;
-	reg startup;
-	reg startup_wr;
 
 
 	assign addr =         
-	        (boson_capture_active) ? write_address : 
-					 hyperram_ctrl ? hyperram_ctrl_addr :
-	                   iomem_valid ? {10'b0, iomem_addr[23:2]} : 32'b0;
+	        (boson_capture_active) 	? write_address : 
+			spi_dma_en_o 			? spi_dma_addr_o :
+			hyperram_ctrl 			? hyperram_ctrl_addr :
+	        iomem_valid 			? {10'b0, iomem_addr[23:2]} : 
+									  32'b0;
+
+	wire rd_req_ = 
+			spi_dma_en_o 			? spi_dma_rd_o : 
+									  rd_req;
 
 	assign wr_req_ = (boson_capture_active) ? wr_req_boson : wr_req;
 
@@ -470,7 +537,7 @@ module hx8kdemo (
 	(
 		.reset             ( !resetn            ),
 		.clk               ( clk                ),
-		.rd_req            ( rd_req             ),
+		.rd_req            ( rd_req_             ),
 		.wr_req            ( wr_req_             ),
 		.mem_or_reg        ( hyperram_ctrl       ),
 		.wr_byte_en        ( wr_byte_en         ),
@@ -479,9 +546,10 @@ module hx8kdemo (
 		.wr_d              ( wr_d_[31:0]         ),
 		.rd_d              ( rd_d[31:0]         ),
 		.rd_rdy            ( rd_rdy             ),
+		.burst_wr_rdy	   ( burst_wr_rdy       ),
 		.busy              ( busy               ),
-		.latency_1x        ( latency_1x             ), /* Fixed 0x12 */
-		.latency_2x        ( latency_2x              ), /* Fixed 0x16 */
+		.latency_1x        ( latency_1x         ),
+		.latency_2x        ( latency_2x         ),
 		.dram_dq_in        ( dram_dq_in[7:0]    ),
 		.dram_dq_out       ( dram_dq_out[7:0]   ),
 		.dram_dq_oe_l      ( dram_dq_oe_l       ),
@@ -490,8 +558,7 @@ module hx8kdemo (
 		.dram_rwds_oe_l    ( dram_rwds_oe_l     ),
 		.dram_ck           ( dram_ck            ),
 		.dram_rst_l        ( dram_rst_l         ),
-		.dram_cs_l         ( dram_cs_l          ),
-		.burst_wr_rdy	   ( burst_wr_rdy )
+		.dram_cs_l         ( dram_cs_l          )
 	);
 
 	

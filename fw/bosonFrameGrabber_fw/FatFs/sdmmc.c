@@ -38,9 +38,11 @@
 #define gpio_out (*(volatile uint32_t *)0x03000000)
 #define gpio_in (*(volatile uint32_t *)0x03000004)
 
-#define spi_div (*(volatile uint32_t *)0x02000010)
-#define spi_dat (*(volatile uint32_t *)0x02000018)
-#define spi_conf (*(volatile uint32_t *)0x02000014)
+#define spi_div (*(volatile uint32_t *)0x03000020)
+#define spi_conf (*(volatile uint32_t *)0x03000024)
+#define spi_dat (*(volatile uint32_t *)0x03000028)
+#define spi_dma_count (*(volatile uint32_t *)0x0300002C)
+#define spi_dma_addr (*(volatile uint32_t *)0x03000030)
 
 #define SPI_RDY 0x1
 
@@ -117,14 +119,22 @@ static void xmit_mmc(
 	UINT bc			  /* Number of bytes to send */
 )
 {
-	BYTE d;
 
-	do
+	if(bc == 512 && buff >= 0x04000000)
 	{
-		spi_dat = *buff++; /* Get a byte to be sent */
-		while (!(spi_conf & SPI_RDY))
-			;
-	} while (--bc);
+
+spi_dma_addr = ((uint32_t)buff);
+spi_dma_count = 512;
+
+		while (!(spi_conf & SPI_RDY));
+	} else {
+		do
+		{
+			spi_dat = *buff++; /* Get a byte to be sent */
+			while (!(spi_conf & SPI_RDY))
+				;
+		} while (--bc);
+	}
 }
 
 /*-----------------------------------------------------------------------*/
