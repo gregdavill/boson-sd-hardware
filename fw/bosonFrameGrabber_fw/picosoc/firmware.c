@@ -86,8 +86,9 @@ void set_latency(uint32_t latency_1x, uint32_t latency_2x)
 
 void set_hyperram_speed()
 {
+//	set_latency(0x9, 0xB);
 	reg_hyperram_ctrl_b = (DEEP_PWR_DOWN | DRIVE_STRENGTH(0b000) | RESERVED_1 | INITIAL_LATENCY(0b1110) | HYBRID_BURST | BURST_LENGTH(0b11)) << 16;
-	set_latency(0x4, 0xa);
+	set_latency(0x4, 0x7);
 }
 
 // --------------------------------------------------------
@@ -331,10 +332,30 @@ void print_ram()
 	for (uint32_t i = 0; i < 32; i++)
 	{
 		print_hex(*ptr++, 8);
-		if (i % 8 == 0)
+		if (i % 8 == 7)
 			print("\r\n");
 		else
 			print(" ");
+	}
+}
+
+
+
+void write_ram()
+{
+	uint32_t data;
+	uint32_t *ptr;
+
+	ptr = 0x04000000;
+	print("HyperRam Write\r\n");
+
+	for (uint32_t i = 0; i < 32; i++)
+	{
+		*ptr++ = 0xAABBCCDD;
+		*ptr++ = 0x11223344;
+
+		*ptr++ = 0x01020304;
+		*ptr++ = 0x05060708;
 	}
 }
 
@@ -450,6 +471,7 @@ print("    Build Date: "__DATE__" "__TIME__"\r\n");
 		print("   [2] Save RAM to SD\n");
 		print("   [3] Capture and Save\n");
 		print("   [4] Print RAM Values\n");
+		print("   [5] Write RAM Values\n");
 
 		print("\n");
 
@@ -475,6 +497,9 @@ print("    Build Date: "__DATE__" "__TIME__"\r\n");
 				break;
 			case '4':
 				print_ram();
+				break;
+			case '5':
+				write_ram();
 				break;
 			default:
 				continue;

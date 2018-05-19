@@ -35,23 +35,19 @@ module hx8kdemo (
 	inout  flash_io1,
 	inout  flash_io2,
 	inout  flash_io3,
-	 
-	output sd_spi_ck,
-	output sd_spi_mosi,
-	input sd_spi_miso,
+
+	inout sd_spi_ck,
+	inout sd_spi_mosi,
+	inout sd_spi_miso,
 	output sd_spi_cs,
 	input sd_cd,
-
-
 
 	/* HYPER RAM SIGNALS */
 	inout [1:0] HRAM_CK,
 	inout HRAM_CS,
-	inout HRAM_RWDS, 
+	inout HRAM_RWDS,
 	inout [7:0] HRAM_DQ,
 	output HRAM_RESET,
-
-
 
 	input [15:0] CAM_CMOS_D,
 	input  CAM_CMOS_CLK,
@@ -59,40 +55,38 @@ module hx8kdemo (
 	output BOSON_RESET,
 	input CAM_CMOS_VSYNC,
 	input CAM_CMOS_HSYNC
-
-//	inout HRAM_DBG
 );
-	
+
 	wire clk;
 	wire clk_90;
-    wire BYPASS;
-    wire RESETB;
+	wire BYPASS;
+	wire RESETB;
 	wire LOCK;
 
-    SB_PLL40_2F_CORE #(
-        .FEEDBACK_PATH("PHASE_AND_DELAY"),
-        .DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
-        .DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
-        .PLLOUT_SELECT_PORTA("SHIFTREG_0deg"),
+	SB_PLL40_2F_CORE #(
+		.FEEDBACK_PATH("PHASE_AND_DELAY"),
+		.DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
+		.DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
+		.PLLOUT_SELECT_PORTA("SHIFTREG_0deg"),
 		.PLLOUT_SELECT_PORTB("SHIFTREG_90deg"),
-        .SHIFTREG_DIV_MODE(1'b0),
-        .FDA_FEEDBACK(4'b0000),
-        .FDA_RELATIVE(4'b0000),
-        .DIVR(4'b0010),
-        .DIVF(7'b0000010), // frecuency multiplier = 2+1 = 3
-        .DIVQ(3'b010),
-        .FILTER_RANGE(3'b001)
-    ) uut (
-        .REFERENCECLK   (clk_in),
-        .PLLOUTGLOBALA   (clk), // output frequency = 3 * input frequency
-        .PLLOUTGLOBALB   (clk_90), // output frequency = 3 * input frequency
-        .BYPASS         (BYPASS),
-        .RESETB         (RESETB),
-        .LOCK (LOCK )
-    );
+		.SHIFTREG_DIV_MODE(1'b0),
+		.FDA_FEEDBACK(4'b0000),
+		.FDA_RELATIVE(4'b0000),
+		.DIVR(4'b0010),
+		.DIVF(7'b0000010), // frecuency multiplier = 2+1 = 3
+		.DIVQ(3'b010),
+		.FILTER_RANGE(3'b001)
+	) uut (
+		.REFERENCECLK   (clk_in),
+		.PLLOUTGLOBALA   (clk), // output frequency = 3 * input frequency
+		.PLLOUTGLOBALB   (clk_90), // output frequency = 3 * input frequency
+		.BYPASS         (BYPASS),
+		.RESETB         (RESETB),
+		.LOCK (LOCK )
+	);
 
-    //assign LED = clk_new;
-    assign BYPASS = 0;
+	//assign LED = clk_new;
+	assign BYPASS = 0;
 	assign RESETB = 1;
 
 	reg [7:0] reset_cnt = 0;
@@ -147,12 +141,12 @@ module hx8kdemo (
 		if (!resetn) begin
 			gpio <= 0;
 			boson_capture_start <= 0;
-			
+
 			hyperram_ctrl <= 0;
 			hyperram_ctrl_addr <= 0;
 
-			latency_1x <= 8'h12;
-			latency_2x <= 8'h16;
+			latency_1x <= 8'h09;
+			latency_2x <= 8'h0B;
 
 			rd_jk <= 0;
 		end else begin
@@ -170,18 +164,16 @@ module hx8kdemo (
 				/* GPIO inputs [0x0300 0004] */
 				if (iomem_addr[7:0] == 8'h 04) begin
 					iomem_ready <= 1;
-					iomem_rdata <= {30'b0, sd_spi_miso, sd_cd};
+					iomem_rdata <= {31'b0, sd_cd};
 				end
 				/* boson_parallel_capture  [0x0300 0008] */
 				if(iomem_addr[7:0] == 8'h 08) begin
 					iomem_ready <= 1;
 					iomem_rdata <= {31'b0, boson_capture_active};
-					
+
 					if (iomem_wstrb[0] && iomem_wdata[0]) begin
 						boson_capture_start <= 1'b1;
 						iomem_ready <= 0;
-					end else begin
-						iomem_ready <= 1;
 					end
 
 					if(boson_capture_start) begin
@@ -193,7 +185,7 @@ module hx8kdemo (
 				if(iomem_addr[7:0] == 8'h 10) begin
 					iomem_ready <= 1;
 					iomem_rdata <= {16'b0,latency_2x,latency_1x};
-					
+
 					if (iomem_wstrb[0]) latency_1x <= iomem_wdata[ 7: 0];
 					if (iomem_wstrb[1]) latency_2x <= iomem_wdata[15: 8];
 				end
@@ -204,7 +196,7 @@ module hx8kdemo (
 						if(!busy) begin
 							hyperram_ctrl <= 1;
 							hyperram_ctrl_addr <= 32'h0000_0800;
-							wr_req <= 1;	
+							wr_req <= 1;
 						end
 
 						if(wr_req) begin
@@ -213,7 +205,7 @@ module hx8kdemo (
 							hyperram_ctrl <= 0;
 						end
 					end else begin
-						
+
 						if(!busy) begin
 							hyperram_ctrl <= 1;
 							hyperram_ctrl_addr <= 32'h0000_0800;
@@ -226,14 +218,14 @@ module hx8kdemo (
 							hyperram_ctrl <= 0;
 						end
 						iomem_rdata <= rd_d;
-					end	
+					end
 				end
 			end
 			/* HyperRAM mem-map  [0x0400 0000+] */
 			if (iomem_valid && !iomem_ready && iomem_addr[31:24] == 8'h 04 ) begin
 				if (|iomem_wstrb) begin
 					if(!busy) begin
-						wr_req <= 1;	
+						wr_req <= 1;
 					end
 
 					if(wr_req) begin
@@ -249,7 +241,7 @@ module hx8kdemo (
 					iomem_rdata <= rd_d;
 				end
 			end
-			
+
 		end
 	end
 
@@ -257,11 +249,11 @@ module hx8kdemo (
 	/* Patch in SPI module */
 	wire [31:0] mem_rdata = simplespi_reg_conf_sel ? 	simplespi_conf_o :
 					 simplespi_reg_dat_sel  ? 	simplespi_data_o :
-					 							iomem_rdata;
+												 iomem_rdata;
 
 	wire mem_ready = spi_en ? 1'b1 :
 							  iomem_ready;
-	
+
 
 	wire spi_dma_en_o;
 	wire spi_dma_rd_o;
@@ -278,10 +270,6 @@ module hx8kdemo (
 		.ser_tx       (ser_tx      ),
 		.ser_rx       (ser_rx      ),
 
-		//.spi_ck	      (sd_spi_ck   ),
-		//.spi_mosi     (sd_spi_mosi ),
-		//.spi_miso     (sd_spi_miso ),
-		
 		.flash_csb    (flash_csb   ),
 		.flash_clk    (flash_clk   ),
 
@@ -325,15 +313,58 @@ module hx8kdemo (
 
 	wire spi_en = simplespi_reg_div_sel | simplespi_reg_conf_sel | simplespi_reg_dat_sel | simplespi_reg_count_sel | simplespi_reg_addr_sel;
 
+wire spi_clk_dout, spi_miso_din, spi_mosi_dout,spi_clk;
+
+reg spi_mosi_dout_loc;
+
+always @(clk)
+	spi_mosi_dout_loc <= spi_mosi_dout;
+
+/* Make use of the HW DDR IO */
+	SB_IO #(
+		.PIN_TYPE(6'b1000_00),	/* DDR out/in */
+		.PULLUP(1'b0)
+	) spi_clk_io (
+		.PACKAGE_PIN   ( sd_spi_ck      ),
+		.OUTPUT_ENABLE ( 1'b1           ), /* Output only */
+		.OUTPUT_CLK    ( spi_clk        ),
+		.D_OUT_0       ( 1'b0   ), /* Rising edge output */
+		.D_OUT_1       ( 1'b1   )  /* Falling edge output */
+	);	
+
+
+	SB_IO #(
+		.PIN_TYPE(6'b1000_00),	/* DDR out/in */
+		.PULLUP(1'b0)
+	) spi_miso_io (
+		.PACKAGE_PIN   ( sd_spi_miso        ),
+		.OUTPUT_ENABLE ( 1'b0           ), /* Input only */
+		.INPUT_CLK     ( spi_clk            ),
+		.CLOCK_ENABLE  ( 1'b1     ),
+		.D_IN_1        ( spi_miso_din  )  /* Rising Edge Input */
+	);	
+
+	SB_IO #(
+		.PIN_TYPE(6'b1000_00),	/* DDR out/in */
+		.PULLUP(1'b0)
+	) spi_mosi_io (
+		.PACKAGE_PIN   ( sd_spi_mosi        ),
+		.OUTPUT_ENABLE ( 1'b1           ), /* Output only */
+		.OUTPUT_CLK    ( spi_clk            ),
+		.CLOCK_ENABLE  ( 1'b1     ),
+		.D_OUT_0       ( spi_mosi_dout  ), /* Rising edge output */
+		.D_OUT_1       ( spi_mosi_dout_loc  )  /* Falling edge output */
+	);
+
 
 
 	simplespi simplespi (
 		.clk         (clk         ),
 		.resetn      (resetn      ),
 
-		.spi_clk     (sd_spi_ck      ),
-		.spi_mosi    (sd_spi_mosi    ),
-		.spi_miso    (sd_spi_miso    ),
+		.spi_clk_dout     (spi_clk      ),
+		.spi_mosi_dout    (spi_mosi_dout    ),
+		.spi_miso_din    (spi_miso_din    ),
 
 		.reg_div_we  (simplespi_reg_div_sel ? iomem_wstrb : 4'b 0000),
 		.reg_div_di  (iomem_wdata),
@@ -364,45 +395,51 @@ module hx8kdemo (
 	reg rd_latch;
 	reg wr_jk;
 	reg wr_latch;
-	
 
-	reg          rd_req;
-	reg          wr_req;
-	reg  [3:0]   wr_byte_en;
+
+	reg           rd_req;
+	reg           wr_req;
+	wire          burst_wr_rdy;
+	reg   [3:0]   wr_byte_en;
 	wire  [31:0]  addr;
-	reg  [31:0]  wr_d;
-	reg  [31:0]  rd_buffer;
-	reg  [5:0]   rd_num_dwords;
-	wire [31:0]  rd_d;
-	wire         rd_rdy;
-	wire         busy;
-	reg  [7:0]   latency_1x;
-	reg  [7:0]   latency_2x;
-
-	wire [7:0] dram_dq_in;
-	wire [7:0] dram_dq_out;
-	wire dram_dq_oe_l  ;
-	wire dram_rwds_in  ;
-	wire dram_rwds_out ;
-	wire dram_rwds_oe_l;
-	wire dram_ck       ;
-	wire dram_rst_l    ;
-	wire dram_cs_l     ;
-	wire burst_wr_rdy;
-
-	wire wr_req_;
-	wire [31:0] wr_d_;
+	reg   [31:0]  wr_d;
+	reg   [31:0]  rd_buffer;
+	reg   [5:0]   rd_num_dwords;
+	wire  [31:0]  rd_d;
+	wire          rd_rdy;
+	wire          busy;
+	reg   [7:0]   latency_1x;
+	reg   [7:0]   latency_2x;
 
 
-	assign addr =         
-	        (boson_capture_active) 	? write_address : 
+	wire [7:0]    dram_dq_in0;
+	wire [7:0]    dram_dq_in1;
+	wire [7:0]    dram_dq_out0;
+	wire [7:0]    dram_dq_out1;
+	wire          dram_dq_oe_l;
+	wire          dram_rwds_in0;
+	wire          dram_rwds_in1;
+	wire          dram_rwds_out0;
+	wire          dram_rwds_out1;
+	wire          dram_rwds_oe_l;
+	wire          dram_ck;
+	wire          dram_rst_l;
+	wire          dram_cs_l;
+
+	/* Low level req */
+	wire          wr_req_;
+	wire [31:0]   wr_d_;
+
+
+	assign addr =
+			(boson_capture_active) 	? write_address :
 			spi_dma_en_o 			? spi_dma_addr_o :
 			hyperram_ctrl 			? hyperram_ctrl_addr :
-	        iomem_valid 			? {10'b0, iomem_addr[23:2]} : 
+			iomem_valid 			? {10'b0, iomem_addr[23:2]} :
 									  32'b0;
 
-	wire rd_req_ = 
-			spi_dma_en_o 			? spi_dma_rd_o : 
+	wire rd_req_ =
+			spi_dma_en_o 			? spi_dma_rd_o :
 									  rd_req;
 
 	assign wr_req_ = (boson_capture_active) ? wr_req_boson : wr_req;
@@ -412,13 +449,13 @@ module hx8kdemo (
 	always @(posedge clk) begin
 		if (!resetn) begin
 			wr_byte_en <= 4'hF;
-			rd_latch <= 0;	
+			rd_latch <= 0;
 		end
 
 		if(rd_jk && !rd_latch) begin
 			rd_latch <= 1;
 			rd_req <= 1;
-		end else 
+		end else
 			rd_req <= 0;
 
 		if(!rd_jk)
@@ -427,98 +464,113 @@ module hx8kdemo (
 
 
 
-	
-    wire [15:0] boson_d;
-    wire boson_rdy;
-    reg boson_req;
-    wire boson_error;
 
-    reg [31:0] write_address;
-    reg [9:0] state;
+	wire [31:0] boson_d;
+	wire boson_rdy;
+	reg boson_req;
+	wire boson_error;
+
+	reg [31:0] write_address;
+	reg [31:0] boson_write_address;
+	reg [9:0] state;
 	reg wr_req_boson;
 
-    /* Patch in Camera connections */
-    parallel_capture pc (   
-    .resetn(resetn),
-    .boson_frame_req(boson_capture_start),
-	.boson_capture_active(boson_capture_active),
+	/* Patch in Camera connections */
+	parallel_capture pc (
+		.resetn               ( resetn               ),
+		.boson_frame_req      ( boson_capture_start  ),
+		.boson_capture_active ( boson_capture_active ),
 
-    .clk(clk),
+		.clk                  ( clk                  ),
 
-    
-    .output_d      ( boson_d     ),
-    .output_rdy    ( boson_rdy   ),
-    .output_next   ( boson_req   ),
-    .output_error  ( boson_error ),
+		.output_d             ( boson_d              ),
+		.output_rdy           ( boson_rdy            ),
+		.output_next   ( boson_req | (burst_wr_rdy && state != 3 && boson_rdy)  ),
+    .output_error         ( boson_error          ),
 
-	.CAM_CMOS_D    (CAM_CMOS_D),
-	.CAM_CMOS_CLK  (CAM_CMOS_CLK),
-	.CAM_CMOS_VALID(CAM_CMOS_VALID),
-	.CAM_CMOS_VSYNC(CAM_CMOS_VSYNC),
-	.CAM_CMOS_HSYNC(CAM_CMOS_HSYNC)
-    );
-	
-    reg [5:0] word_count;
-    always @(posedge clk) begin
+		.CAM_CMOS_D           ( CAM_CMOS_D           ),
+		.CAM_CMOS_CLK         ( CAM_CMOS_CLK         ),
+		.CAM_CMOS_VALID       ( CAM_CMOS_VALID       ),
+		.CAM_CMOS_VSYNC       ( CAM_CMOS_VSYNC       ),
+		.CAM_CMOS_HSYNC       ( CAM_CMOS_HSYNC       )
+	);
+
+	reg [5:0] word_count;
+
+    reg [3:0] wait_cnt;
+	always @(posedge clk) begin
 		if(!resetn) begin
 			write_address <= 0;
-			
+			boson_write_address <= 0;
+
 			wr_d <= 0;
 			state <= 0;
 			wr_req_boson <= 0;
 			word_count <= 0;
-			
+
 		end else begin
-		
-			boson_req <= 0;
-			wr_req_boson <= 0;
 
 			if(!boson_capture_active) begin
-				write_address <= 0;
+				boson_write_address <= 0;
 				state <= 0;
 				word_count <= 0;
 			end
 
-			/* Pull data out off the FIFO into RAM */
-			if(boson_capture_active && boson_rdy) begin
-				if(word_count < 9) begin
-					
+			boson_req <= 0;
+			wr_req_boson <= 0;
+
+write_address <= boson_write_address;
+
+
+/* Pull data out off the FIFO into RAM */
+			if(boson_capture_active) begin
+				if(word_count < 20) begin
+
 					if(state == 0) begin
-						if(word_count == 0 && !busy || word_count > 0) begin
-							wr_d[15:0] <= boson_d;
+						if(!busy && boson_rdy) begin
+							wr_d <= boson_d;
 							boson_req <= 1;
+                            boson_write_address <= boson_write_address + 1;
+                            wr_req_boson <= 1;
 							state <= 1;
+                            word_count <= 0;
+                            wait_cnt <= 4;
 						end
-					end
-					/* 1 */
-					/* 2 */
-					else if(state == 3) begin
-						if(word_count == 0) begin
-							if(!busy) begin
-								boson_req <= 1;
-								wr_req_boson <= 1;
-								write_address <= write_address + 1;
-								wr_d[31:16] <= boson_d;
-								state <= 4;
-							end
-						end 
+                    end
+                    else if(state == 1) begin
+                        if(!boson_rdy)
+                            state <= 3;
+                        
+                        wait_cnt <= wait_cnt - 1;
+                        if(wait_cnt == 0)
+                            state <= 2;
+                    end
+					else if(state == 2) begin
+						if(!busy) begin
+                            state <= 3;
+                        end
 						else if(busy) begin
 							if(burst_wr_rdy) begin
-								boson_req <= 1;
-								wr_req_boson <= 1;
-								write_address <= write_address + 1;
-								wr_d[31:16] <=  boson_d;
-								state <= 4;
+                                if(boson_rdy) begin
+								    //boson_req <= 1;
+								    wr_req_boson <= 1;
+                                boson_write_address <= boson_write_address + 1;
+                                word_count <= word_count + 1;
+                                    state <= 2;
+                                end else begin
+                                    state <= 0;
+                                end
+
+                                wr_d <=  boson_d;
+								
 							end
 						end else begin
-							state <= 3;
-							word_count <= 0;
-						end
-					end 
-					/* 4 */
-					else if(state >= 5) begin
 							state <= 0;
-							word_count <= word_count + 1;
+						end
+					end
+					else if(state == 3) begin
+							if(!busy)
+                            state <= 0;
 					end
 					else begin
 						state <= state + 1;
@@ -526,54 +578,63 @@ module hx8kdemo (
 				end
 				else begin
 					word_count <= 0;
-				end				
+                    state <= 0;
+				end
 			end
 
 		end
 	end
 
 
+	wire dram_ck_en;
+
 	hyper_xface u_hyper_xface
 	(
 		.reset             ( !resetn            ),
 		.clk               ( clk                ),
-		.rd_req            ( rd_req_             ),
-		.wr_req            ( wr_req_             ),
-		.mem_or_reg        ( hyperram_ctrl       ),
+		.clk90             ( clk_90             ),
+		.rd_req            ( rd_req_            ),
+		.wr_req            ( wr_req_            ),
+		.mem_or_reg        ( hyperram_ctrl      ),
 		.wr_byte_en        ( wr_byte_en         ),
 		.addr              ( addr[31:0]         ),
 		.rd_num_dwords     ( 6'b000001          ),
-		.wr_d              ( wr_d_[31:0]         ),
+		.wr_d              ( wr_d_[31:0]        ),
 		.rd_d              ( rd_d[31:0]         ),
 		.rd_rdy            ( rd_rdy             ),
-		.burst_wr_rdy	   ( burst_wr_rdy       ),
+		.burst_wr_rdy	     ( burst_wr_rdy       ),
 		.busy              ( busy               ),
 		.latency_1x        ( latency_1x         ),
 		.latency_2x        ( latency_2x         ),
-		.dram_dq_in        ( dram_dq_in[7:0]    ),
-		.dram_dq_out       ( dram_dq_out[7:0]   ),
+		.dram_dq_in0       ( dram_dq_in0[7:0]   ),
+		.dram_dq_in1       ( dram_dq_in1[7:0]   ),
+		.dram_dq_out0      ( dram_dq_out0[7:0]  ),
+		.dram_dq_out1      ( dram_dq_out1[7:0]  ),
 		.dram_dq_oe_l      ( dram_dq_oe_l       ),
-		.dram_rwds_in      ( dram_rwds_in       ),
-		.dram_rwds_out     ( dram_rwds_out      ),
+		.dram_rwds_in0     ( dram_rwds_in0      ),
+		.dram_rwds_in1     ( dram_rwds_in1      ),
+		.dram_rwds_out0    ( dram_rwds_out0     ),
+		.dram_rwds_out1    ( dram_rwds_out1     ),
 		.dram_rwds_oe_l    ( dram_rwds_oe_l     ),
 		.dram_ck           ( dram_ck            ),
+		.dram_ck_en        ( dram_ck_en            ),
 		.dram_rst_l        ( dram_rst_l         ),
 		.dram_cs_l         ( dram_cs_l          )
 	);
 
-	
 
 
-	SB_IO #( 
-		.PIN_TYPE(6'b0110_01), 
+
+	SB_IO #(
+		.PIN_TYPE(6'b0110_01),
 		.PULLUP(1'b0)
 	) hyperram_cs (
 		.PACKAGE_PIN(HRAM_CS),
 		.D_OUT_0(dram_cs_l)
 	);
 
-	SB_IO #( 
-		.PIN_TYPE(6'b0110_01), 
+	SB_IO #(
+		.PIN_TYPE(6'b0110_01),
 		.PULLUP(1'b0)
 	) hyperram_reset (
 		.PACKAGE_PIN(HRAM_RESET),
@@ -581,36 +642,49 @@ module hx8kdemo (
 	);
 
 
-	SB_IO #( 
-		.PIN_TYPE(6'b1010_01), 
+	SB_IO #(
+		.PIN_TYPE(6'b1000_00),
 		.PULLUP(1'b0)
 	) hyperram_rwds (
-		.PACKAGE_PIN(HRAM_RWDS),
-		.OUTPUT_ENABLE(!dram_rwds_oe_l),
-		.D_OUT_0(dram_rwds_out),
-		.D_IN_0(dram_rwds_in)
+		.PACKAGE_PIN   ( HRAM_RWDS      ),
+		.OUTPUT_ENABLE ( !dram_rwds_oe_l),
+		.OUTPUT_CLK    ( clk            ),
+		.INPUT_CLK     ( clk_90         ),
+		.CLOCK_ENABLE  ( 1'b1           ),
+		.D_OUT_0       ( dram_rwds_out0 ),
+		.D_OUT_1       ( dram_rwds_out1 ),
+		.D_IN_0        ( dram_rwds_in0  ),
+		.D_IN_1        ( dram_rwds_in1  )
 	);
 
-	SB_IO #( 
-		.PIN_TYPE(6'b0110_01), 
+	SB_IO #(
+		.PIN_TYPE(6'b1000_01),
 		.PULLUP(1'b0)
 	) hyperram_ck [1:0] (
-		.PACKAGE_PIN(HRAM_CK),
-		.D_OUT_0({!dram_ck, dram_ck})
+		.PACKAGE_PIN   ( HRAM_CK ),
+		.OUTPUT_ENABLE ( 1'b1 ),
+		.OUTPUT_CLK    ( clk_90            ),
+		.CLOCK_ENABLE(1'b1),
+		.D_OUT_0       ( {!dram_ck_en,dram_ck_en} ),
+		.D_OUT_1       ( 2'b10 )
 	);
 
 
-	SB_IO #( 
-		.PIN_TYPE(6'b1010_01), 
+
+	SB_IO #(
+		.PIN_TYPE(6'b1000_00),
 		.PULLUP(1'b0)
 	) hyperram_dq [7:0] (
-		.PACKAGE_PIN(HRAM_DQ),
-		.OUTPUT_ENABLE(!dram_dq_oe_l),
-		.D_OUT_0(dram_dq_out),
-		.D_IN_0(dram_dq_in)
+		.PACKAGE_PIN   ( HRAM_DQ ),
+		.OUTPUT_ENABLE ( !dram_dq_oe_l),
+		.OUTPUT_CLK    ( clk            ),
+		.INPUT_CLK     ( clk_90         ),
+		.CLOCK_ENABLE(1'b1),
+		.D_OUT_0       ( dram_dq_out0 ),
+		.D_OUT_1       ( dram_dq_out1 ),
+		.D_IN_0        ( dram_dq_in1  ),
+		.D_IN_1        ( dram_dq_in0  )
 	);
-
-
 
 
 /*
@@ -618,11 +692,11 @@ module hx8kdemo (
 	reg hyper_ram_ren;
 	reg hyper_ram_wren;
 	reg [15:0] hyper_ram_wr_data;
-	
+
 
 
 	wire hram_ren;
-	wire hram_wen;	
+	wire hram_wen;
 	wire [15:0] hram_data;
 	wire [15:0] hram_data_out;
 
@@ -649,7 +723,7 @@ module hx8kdemo (
 		// SRAM core read data interface
 		.sram_rd_data_vld(hram_data_out_clk),
 		.sram_rd_data(hram_data_out),
-		
+
 		// IO interface
 		.hyperram_io_clk(hram_io_clk),
 		.hyperram_clk(hram_clk),
@@ -668,7 +742,7 @@ module hx8kdemo (
 		.hyperram_dq_from_pad_1(hyperram_dq_from_pad_1)
 	//	.hyperram_rwds_from_pad_0(),
 	//	.hyperram_rwds_from_pad_()
-	
+
 		);
 
 	wire [7:0] hyperram_dq_to_pad_0,hyperram_dq_to_pad_1;
@@ -678,11 +752,11 @@ module hx8kdemo (
 
 
 
-    hyperram_io_ice40 hram_io (
+	hyperram_io_ice40 hram_io (
 	.io_clk(hram_io_clk),
-	
+
 	.clk(hram_clk),
-	
+
 	.hyperram_dq_dir(hyperram_dq_dir),
 	.hyperram_rwds_dir(hyperram_rwds_dir),
 

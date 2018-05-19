@@ -36,7 +36,7 @@ module bosonCamera (
 );
 
 	reg [31:0] frame_counter = 0;
-	reg [31:0] frame_clk = 16'h3160; /* skip to first image line for simulation */
+	reg [31:0] frame_clk = (1711 * 262); /* skip to lost image line for simulation */
 
 	initial begin	
 			CMOS_DQ = 16'b0;

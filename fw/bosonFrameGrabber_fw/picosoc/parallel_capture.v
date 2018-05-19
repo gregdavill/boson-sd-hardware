@@ -4,7 +4,7 @@ module parallel_capture (
     input resetn,
     input clk,
 
-    output [15:0] output_d,
+    output [31:0] output_d,
     output output_rdy,
     input output_next,
     output output_error,
@@ -77,11 +77,14 @@ module parallel_capture (
     end
 
     
+    reg boson_fifo_clk_i;
+    reg [15:0] boson_data_ff;
 
 	always @(posedge boson_clk) begin
 		if(!resetn) begin
             capture_active <= 0;
             clk_cnt <= 0;
+            boson_fifo_clk_i <= 0;
 		end 
         
         else begin
@@ -101,22 +104,31 @@ module parallel_capture (
                 capture_active <= 0;
                 clk_cnt <= 0;
             end
+            
+            if(!boson_valid)
+            boson_fifo_clk_i <= 0;
+            else begin
+
+                boson_fifo_clk_i <= ~boson_fifo_clk_i;
+            end
+                if(!boson_fifo_clk_i)
+                    boson_data_ff <= boson_data;
 
 		end
 	end
 
     BramFifo  #( 
         .ADDR_LEN(9),
-        .DATA_WIDTH(16)
+        .DATA_WIDTH(32)
     ) boson_fifo (
         .CLK0(clk),
         .RST0(!resetn),
         .Q(output_d), 
         .DEQ(output_next), 
         .EMPTY(fifo_empty),
-        .CLK1(boson_clk), 
+        .CLK1(boson_fifo_clk_i), 
         .RST1(!resetn), 
-        .D(boson_data), 
+        .D({boson_data_ff,boson_data}), 
         .ENQ(fifo_enq),  
         .FULL(fifo_full)
 	 );

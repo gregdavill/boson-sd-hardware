@@ -15,41 +15,88 @@
 --              v.1.2 for applicable Conditions.
 -- Description: S27KL0641DABHI020 : Cypress IC DRAM 64MBIT 3V 100MHZ 24BGA
 --              This is a dword interface module to HyperRAM for writing
---              and reading DWORDs. It is optimized for RTL portability and
---              simplicity rather than absolute bandwidth. The DRAM clock is
---              Div-4 of the core FPGA fabric clock in order to achieve reqd
---              90o phase clock and data relationship per HyperRAM spec w/o 
---              using an FPGA PLL. Latency is also max 2cyc ( about 12 RAM 
---              clocks ) as to not require programming different values to the
---              control register defaults ( 2x latency with 166 MHz ).
+--              and reading DWORDs. It makes use of dual input clocks, and 
+--              dual output registers in order to support a higher bandwidth.
+--              Dual clocks are required. These sholud be the same frequency 
+--              just with a 90 degrees phase shift. This is used to properly 
+--              clock and sammplle the DDR data. Output from the module is 
+--              done in two pairs for DDR signals. These signals are intended
+--              to connect to DDR IO blocks found in iCE40 FPGAs. Latency is
+--              also max 2cyc ( about 12 RAM clocks ) as to not require 
+--              programming different values to the control register defaults
+--              ( 2x latency with 166 MHz ).
 --              Power On Reset : Part requires 150uS after Power On or Reset
 --
--- Write Cycle:
---  clk        /\/\/\
---  wr_req     / \__
---  addr       < >--
---  wr_d       < >--
---  wr_byte_en <F>--
---  busy       __/                                                        \_
---                 1       2       3      ...   .     14      15      16
---  dram_ck    __/   \___/   \___/   \___/   \_  \___/   \___/   \___/   \__
---  dram_cs_l  \___________________________________________________________/
---  dram_dq    <A1><A2><A3><A4><A5><A6>--------------------<11><22><33><44>-
+-- Write Cycle: (Default Latency [12 clks])
+--  
+--  Module Interface:
 --
--- Read  Cycle:
---  clk        /\/\/\
---  rd_req     / \___
---  addr       < >---
---  num_dwrds  < >---
---  busy       __/                                                          \_
---  rd_d       -----------------------------------------------------------<>-
---  rd_rdy     ___________________________________________________________/\_
---                 1       2       3      ...        14      15      16
---  dram_ck    __/   \___/   \___/   \___/   \_  ___/   \___/   \___/   \__
---  dram_cs_l  \____________________________________________________________/
---  dram_dq    <A1><A2><A3><A4><A5><A6>---------------------<11><22><33><44>-
---  dram_rwds  _/                     \_____________________/   \___/   \____
+--             +----+    +----+    +----+    +----+            +----+    +----+    +----+    
+-- clk         |    |    |    |    |    |    |    |     ....   |    |    |    |    |    |    
+--             +    +----+    +----+    +----+    +---        -+    +----+    +----+    +----
 --
+--             +---------+
+-- wr_req      +         +-------------------------------------------------------------------
+-- 
+--             +---------+                           
+-- addr        |   ADDR  |                             
+-- wr_d        |   DATA  | ------------------------------------------------------------------                        
+-- wr_en       |   4'hF  |                             
+--             +---------+ 
+-- 
+-- busy                  +-----------------------------------------------------------+
+--             ----------+                                                           +----
+--                     
+--  HyperRam Interface:
+--                          +----+    +----+    +----+            +----+    +----+       
+-- hram_ck                  | 1  |    | 2  |    | 3  |  ....      | 15 |    | 16 |        
+--             -------------+    +----+    +----+    +--      ----+    +----+    +---------
+-- hram_cs     ----------+                                                              +--
+--                       +------------------------------  ....  ------------------------+
+--                          
+--                       +----+----+----+----+----+----+        +----+----+----+----+   
+-- hram_dq     --------- | A1 | A2 | A3 | A4 | A5 | A5 |  ....  | 11 | 22 | 33 | 44 | -----
+--                       +----+----+----+----+----+----+--    --+----+----+----+----+
+--                    
+
+
+
+-- Read Cycle: (Default Latency [12 clks])
+--  
+--  Module Interface:
+--
+--             +----+    +----+    +----+    +----+            +----+    +----+    +----+    +----+    
+-- clk         |    |    |    |    |    |    |    |     ....   |    |    |    |    |    |    |    |    
+--             +    +----+    +----+    +----+    +---        -+    +----+    +----+    +----+    +----
+--
+--             +---------+
+-- rd_req      +         +-----------------------------------------------------------------------------
+-- 
+--             +---------+                           
+-- addr        |   ADDR  |                             
+-- num_dwrds   |   cnt   |                             
+--             +---------+ 
+-- 
+-- busy                  +-----------------------------------------------------------+
+--             ----------+                                                           +---------------
+--
+-- busy                                                                                      +----+
+--             ------------------------------------------------------------------------------+    +--
+--                     
+--  HyperRam Interface:
+--                          +----+    +----+    +----+            +----+    +----+        
+-- hram_ck     -------------+ 1  +----+ 2  +----+ 3  +--      ----+ 15 +----+ 16 +---------
+-- hram_cs     ----------+                                                              +--
+--                       +------------------------------  ....  ------------------------+                  
+--                       +----+----+----+----+----+----+          +----+----+----+----+   
+-- hram_dq     --------- | A1 | A2 | A3 | A4 | A5 | A5 |  ....    | 11 | 22 | 33 | 44 | -----
+--                       +----+----+----+----+----+----+--    ----+----+----+----+----+
+--                    
+
+
+
+
+
 -- Write Bursts:
 --  Writes may be bursted in groups of 32bits by asserting wr_req with new data
 --  every 8 clock cycles once burst_wr_rdy has asserted. Note Addr is ignored
@@ -63,7 +110,8 @@
 --  dram_dq      --<A><A><A><A><A><A><B><B><B><B><C><C><C><C><D><D><D><D>---
 --
 -- Core Interface Description:
---  clk           : in  : FPGA clock. Actual DRAM clock will be this Div-4.
+--  clk           : in  : FPGA interface clock.
+--  clk90         : in  : clk phase shifted 90 degrees. to clk/sample DDR interface.
 --  rd_req        : in  : When core not busy, assert 1ck to make read request.
 --  wr_req        : in  : When core not busy, assert 1ck to make write request.
 --  mem_or_req    : in  : 0=DRAM Memory. 1=Configuration Register 
@@ -96,6 +144,8 @@ module hyper_xface
 (
   input  wire         reset,
   input  wire         clk,
+  input  wire         clk90,
+ 
   input  wire         rd_req,
   input  wire         wr_req,
   input  wire         mem_or_reg,
@@ -110,15 +160,20 @@ module hyper_xface
   input  wire [7:0]   latency_1x,
   input  wire [7:0]   latency_2x,
 
-  input  wire [7:0]   dram_dq_in,
-  output reg  [7:0]   dram_dq_out,
+  input  wire [7:0]   dram_dq_in0,
+  output reg  [7:0]   dram_dq_out0,
+  input  wire [7:0]   dram_dq_in1,
+  output reg  [7:0]   dram_dq_out1,
   output reg          dram_dq_oe_l,
 
-  input  wire         dram_rwds_in,
-  output reg          dram_rwds_out,
+  input  wire         dram_rwds_in0,
+  output reg          dram_rwds_out0,
+  input  wire         dram_rwds_in1,
+  output reg          dram_rwds_out1,
   output reg          dram_rwds_oe_l,
 
-  output reg          dram_ck,
+  output wire          dram_ck,
+  output wire          dram_ck_en,
   output wire         dram_rst_l,
   output wire         dram_cs_l,
   output wire [7:0]   sump_dbg
@@ -127,6 +182,8 @@ module hyper_xface
 
   reg  [47:0]  addr_sr;
   reg  [31:0]  data_sr;
+  reg          rwds_oe_ff;
+  reg          dq_oe_ff;
   reg  [31:0]  rd_sr;
   reg  [1:0]   ck_phs;
   reg  [2:0]   fsm_addr;
@@ -144,9 +201,9 @@ module hyper_xface
   reg  [7:0]   sr_data;
   reg  [3:0]   sr_byte_en;
   reg  [7:0]   dram_rd_d;
-  reg          addr_shift;
-  reg          data_shift;
-  reg          wait_shift;
+  wire         addr_shift;
+  wire         data_shift;
+  wire         wait_shift;
   reg          cs_loc;
   reg          cs_l_reg;
   reg          dram_ck_loc;
@@ -154,14 +211,19 @@ module hyper_xface
   reg  [3:0]   rd_cnt;
   reg  [2:0]   rd_fsm;
   reg  [5:0]   rd_dwords_cnt;
-  reg          sample_now;
   reg          burst_wr_jk;
   reg          burst_wr_jk_clr;
   reg  [4:0]   burst_wr_sr;
   reg  [35:0]  burst_wr_d;
 
+  reg [2:0] run_rd_jk_sr;
+
 
   assign dram_rst_l = ~ reset;
+
+  assign addr_shift = |fsm_addr;
+  assign wait_shift = |fsm_wait;
+  assign data_shift = |fsm_data;
 
 // Notes gleaned from datasheet:
 // The clock is not required to be free-running. 
@@ -236,22 +298,6 @@ module hyper_xface
 // 0x000100 0001 : Cfg-Reg1  0x00000801   : 0x0002
 
 
-//-----------------------------------------------------------------------------
-// DRAM clock is core clock over 4.  This is to support the requirement of 
-// placing both clock edges on center of the DDR data. A full bandwidth design
-// would require fancy PLL phase shifting which falls beyond the scope of this
-// portable RTL only interface project.
-//-----------------------------------------------------------------------------
-always @ ( posedge clk ) begin : proc_ck
- begin
-   if ( run_jk == 1 ) begin 
-     ck_phs <= ck_phs + 1;
-   end else begin
-     ck_phs <= 2'd0;
-   end 
- end
-end
-
 
 //-----------------------------------------------------------------------------
 // Shift Registers for 48bits of Ctrl+Addr and 32bits of Write Data
@@ -261,22 +307,17 @@ always @ ( posedge clk ) begin : proc_lb_regs
    rd_d       <= 32'd0;
    rd_rdy     <= 0;
    go_bit     <= 0;
-   busy       <= run_jk | go_bit;
+   busy       <= run_jk | go_bit | run_jk_sr[2];
 
    if ( addr_shift == 1 ) begin
-     addr_sr[47:0]  <= { addr_sr[39:0], 8'd0 };
+     addr_sr[47:0]  <= { addr_sr[31:0], 16'd0 };
    end
    if ( data_shift == 1 ) begin
-     data_sr[31:0]   <= { data_sr[23:0], 8'd0 };
-     sr_byte_en[3:0] <= { sr_byte_en[2:0], 1'b0 };
+     data_sr[31:0]   <= { data_sr[15:0], 16'd0 };
+     sr_byte_en[3:0] <= { sr_byte_en[1:0], 2'b0 };
    end
-   if ( burst_wr_jk_clr == 1 ) begin
-     data_sr[31:0]   <= burst_wr_d[31:0];
-     sr_byte_en[3:0] <= burst_wr_d[35:32];
-   end
-
-   if ( run_jk == 0 && ( wr_req == 1 || rd_req == 1 ) ) begin
-     burst_wr_jk    <= 0;
+   
+   if ( run_jk == 0 && (!busy) && ( wr_req == 1 || rd_req == 1 ) ) begin
      busy           <= 1;
      go_bit         <= 1;// Kick off the FSM
      sr_byte_en     <= wr_byte_en[3:0];
@@ -297,13 +338,9 @@ always @ ( posedge clk ) begin : proc_lb_regs
      data_sr[31:0]  <= wr_d[31:0];
    end 
 
-   if ( burst_wr_jk_clr == 1 ) begin
-     burst_wr_jk <= 0;
-   end 
-   if ( run_jk == 1 && wr_req == 1 && burst_wr_sr[4:0] != 5'd0 ) begin
-     burst_wr_jk <= 1;
-     burst_wr_d[31:0]  <= wr_d[31:0];
-     burst_wr_d[35:32] <= wr_byte_en[3:0];
+   if ( run_jk == 1 && wr_req == 1 && burst_wr_sr != 1'b0 ) begin
+     data_sr[31:0]  <= wr_d[31:0];
+     sr_byte_en[3:0] <= wr_byte_en[3:0];
    end
 
    if ( rd_done == 1 ) begin
@@ -313,7 +350,6 @@ always @ ( posedge clk ) begin : proc_lb_regs
 
    if ( reset == 1 ) begin 
      go_bit       <= 0;
-     burst_wr_jk  <= 0;
    end 
 
  end
@@ -328,18 +364,18 @@ end // proc_lb_regs
 //-----------------------------------------------------------------------------
 always @ ( posedge clk ) begin : proc_fsm
  begin
-   addr_shift <= 0;
-   data_shift <= 0;
-   wait_shift <= 0;
    burst_wr_jk_clr <= 0;
    if ( rd_req == 1 ) begin
      rd_dwords_cnt <= rd_num_dwords[5:0];
    end
 
-   if ( ck_phs[0] == 1 ) begin
+// if ( ck_phs[0] == 1 ) begin
+     sr_data         <= 0;
+     dram_dq_out0    <= 0;   // prepare both clock edges of data.
+       
      if ( fsm_addr != 3'd0 ) begin
-       dram_dq_oe_l   <= 0; // D[7:0] is Output 
-       dram_rwds_oe_l <= 1; // RWDS is Input
+       dq_oe_ff   <= 0; // D[7:0] is Output 
+       rwds_oe_ff <= 1; // RWDS is Input
        fsm_addr <= fsm_addr - 1;
        if ( fsm_addr == 3'd1 ) begin
          // Register Writes have zero latency
@@ -363,45 +399,49 @@ always @ ( posedge clk ) begin : proc_fsm
          fsm_wait <= 6'd0;
          fsm_data <= 4'd0;
        end
-       sr_data    <= addr_sr[47:40];
-       addr_shift <= 1;
+       dram_dq_out0    <= addr_sr[47:40];   // prepare both clock edges of data.
+       sr_data         <= addr_sr[39:32];
      end 
 
+     burst_wr_rdy <= 0;
+     
      if ( fsm_wait != 6'd0 ) begin
-       byte_wr_en <= 0;
-       wait_shift <= 1;
+       byte_wr_en      <= 0;
+       dram_rwds_out0  <= 0;
        fsm_wait   <= fsm_wait - 1;
        if ( fsm_wait == 6'd1 ) begin
-         fsm_data <= 4'd4;// Number of Bytes to Write
+         fsm_data <= 4'd2;// Number of Bytes to Write (double edge)
+         burst_wr_rdy <= 1;
        end
-//     sr_data <= { 2'd0, fsm_wait[5:0] };// Marker for when Latency is wrong
      end
 
      if ( fsm_data != 4'd0 ) begin
-       fsm_data   <= fsm_data - 1;
-       sr_data    <= data_sr[31:24];
-       byte_wr_en <= sr_byte_en[3];
-       data_shift <= 1;
+       fsm_data        <= fsm_data - 1;
+       dram_dq_out0    <= data_sr[31:24];   // prepare both clock edges of data.
+       sr_data         <= data_sr[23:16];
+       dram_rwds_out0  <= ~sr_byte_en[3];   // Note 1 = Don't Write Byte
+       byte_wr_en      <= ~sr_byte_en[2];
+
        if ( fsm_data == 4'd1 ) begin
          run_jk <= 0;
-         if ( burst_wr_jk == 1 ) begin 
+         if ( wr_req == 1 ) begin 
            run_jk          <= 1;
-           burst_wr_jk_clr <= 1;
-           fsm_data        <= 4'd4;// Number of Bytes to Write
+           fsm_data        <= 4'd2;// Number of Bytes to Write:  (double edge)
+           burst_wr_rdy <= 1; /* Prepare for a new byte */
          end
        end
      end 
 
      if ( fsm_wait != 6'd0 || fsm_data != 4'd0 ) begin
        if ( rw_bit == 1 ) begin
-         dram_dq_oe_l   <= 1; // Input for Reads
-         dram_rwds_oe_l <= 1; // Input for Reads
+         dq_oe_ff   <= 1; // Input for Reads
+         rwds_oe_ff <= 1; // Input for Reads
        end else begin
-         dram_dq_oe_l   <= 0; // Output for Writes
-         dram_rwds_oe_l <= 0; // Output for Writes
+         dq_oe_ff   <= 0; // Output for Writes
+         rwds_oe_ff <= 0; // Output for Writes
        end
      end
-   end // if ( ck_phs[0] == 1 ) begin
+//   end // if ( ck_phs[0] == 1 ) begin
 
    if ( rd_done == 1 ) begin
      if ( rd_dwords_cnt == 6'd1 ) begin
@@ -415,12 +455,12 @@ always @ ( posedge clk ) begin : proc_fsm
    end 
 
    if ( go_bit == 1 ) begin
-     fsm_addr       <= 3'd6;
+     fsm_addr       <= 3'd3;
      fsm_wait       <= 6'd0;
      fsm_data       <= 4'd0;
      run_jk         <= 1;
-     dram_dq_oe_l   <= 1; // Default Input
-     dram_rwds_oe_l <= 1; // Default Input
+     dq_oe_ff   <= 1; // Default Input
+     rwds_oe_ff <= 1; // Default Input
    end
 
    run_jk_sr <= { run_jk_sr[2:0], run_jk };
@@ -428,8 +468,8 @@ always @ ( posedge clk ) begin : proc_fsm
      cs_loc <= 1;
    end else if ( run_jk_sr[1:0] == 2'd0 ) begin
      cs_loc <= 0;
-     dram_dq_oe_l   <= 1; // Default Input
-     dram_rwds_oe_l <= 1; // Default Input
+     dq_oe_ff   <= 1; // Default Input
+     rwds_oe_ff <= 1; // Default Input
    end 
 
    if ( reset == 1 ) begin 
@@ -438,16 +478,17 @@ always @ ( posedge clk ) begin : proc_fsm
      fsm_wait   <= 6'd0;
      run_jk     <= 0;
      run_rd_jk  <= 0;
+     run_jk_sr  <= 0;
      byte_wr_en <= 0;
+     dram_rwds_out0 <= 0;
      cs_loc     <= 0;
    end 
 
-   burst_wr_rdy <= 0;
-   if ( fsm_data == 4'd4 && burst_wr_rdy == 0 ) begin
-     burst_wr_rdy <= 1;
-   end
-   // Protection against wr_req coming in too late. There is a 5 clock window
-   burst_wr_sr[4:0] <= { burst_wr_sr[3:0], burst_wr_rdy };
+  // if ( fsm_wait == 4'd0 && burst_wr_rdy == 0 ) begin
+  //   burst_wr_rdy <= 1;
+  // end
+   // Protection against wr_req coming in too late. There is a 1 clock window
+   burst_wr_sr <= burst_wr_rdy;
 
  end
 end // proc_fsm
@@ -466,65 +507,74 @@ always @ ( posedge clk ) begin : proc_rd_sr
  begin
    rwds_in_loc_p1 <= rwds_in_loc;
    rd_done        <= 0;
-   sample_now     <= 0;
+   run_rd_jk_sr <= {run_rd_jk_sr[1:0], run_rd_jk};
 
-   if ( run_rd_jk == 0 ) begin
-     rd_fsm <= 3'd4;
+//TODO fix this logic to handle RWDS delaying reading data
+   if ( !(&{run_rd_jk_sr,run_rd_jk} ) | reset == 1 ) begin
      rd_cnt <= 4'd0;
    end else begin
-     if ( rd_fsm == 3'd4 ) begin
-       if ( rwds_in_loc == 1 && rwds_in_loc_p1 == 0 ) begin
-         rd_fsm     <= 3'd0;
-         sample_now <= 1;
-       end
-     end else begin
-       rd_fsm <= rd_fsm + 1;
-       if ( rd_fsm == 3'd1 ) begin
-         rd_fsm     <= 3'd4;
-         sample_now <= 1;
-       end
-     end
-   end 
+//     if ( rd_fsm == 3'd4 ) begin
+//       if ( rwds_in_loc == 1 && rwds_in_loc_p1 == 0 ) begin
+//         rd_fsm     <= 3'd0;
+//         sample_now <= 1;
+//       end
+//     end else begin
+//       rd_fsm <= rd_fsm + 1;
+//       if ( rd_fsm == 3'd1 ) begin
+//         rd_fsm     <= 3'd4;
+//         sample_now <= 1;
+//       end
+//     end
 
-   if ( sample_now == 1 ) begin 
-     rd_sr[31:0] <= { rd_sr[23:0], dram_rd_d[7:0] };
-     rd_cnt      <= rd_cnt + 1;
-     if ( rd_cnt == 4'd3 ) begin
-       rd_done <= 1;// Call it a day after 4 bytes
-       rd_cnt  <= 4'd0;
-     end
+     if ( rwds_in_loc == 1 && dram_rwds_in0 == 0) begin 
+       rd_sr[31:0] <= { rd_sr[15:0], dram_rd_d[7:0], dram_dq_in1[7:0] };
+       rd_cnt      <= rd_cnt + 1;
+       if ( rd_cnt == 4'd1 ) begin
+         rd_done <= 1;// Call it a day after 4 bytes
+         rd_cnt  <= 4'd0;
+       end
+     end 
    end 
    
  end
 end // proc_rd_sr
   // Pipe out some signals for bebugging using SUMP
-  assign sump_dbg[0] = busy;
-  assign sump_dbg[1] = run_rd_jk;
-  assign sump_dbg[2] = sample_now;
-  assign sump_dbg[3] = rd_done;
-  assign sump_dbg[7:4] = rd_cnt[3:0];
+//  assign sump_dbg[0] = busy;
+ // assign sump_dbg[1] = run_rd_jk;
+ // assign sump_dbg[2] = sample_now;
+ // assign sump_dbg[3] = rd_done;
+ // assign sump_dbg[7:4] = rd_cnt[3:0];
 
 
 //-----------------------------------------------------------------------------
 // IO Flops
 //-----------------------------------------------------------------------------
+assign dram_ck = clk90 & run_jk_sr[1];
+assign dram_ck_en = run_jk_sr[1];
+
+/* Falling edge data is delayed by 1 clk. 
+ * Such that data is output in Rising->Falling fasion. 
+ * This way hold times won't be violated too. 
+ */
+
 always @ ( posedge clk ) begin : proc_out
  begin
-   dram_ck_loc   <= ck_phs[1];
-   dram_ck       <= dram_ck_loc;
-   rwds_in_loc   <= dram_rwds_in;
-   dram_rd_d     <= dram_dq_in[7:0];
-   dram_dq_out   <= sr_data[7:0];
-   dram_rwds_out <= ~ byte_wr_en;// Note: rwds is a mask, 1==Don't Write Byte
-   cs_l_reg    <= ~ cs_loc;
+   rwds_in_loc   <= dram_rwds_in1;
+   dram_rd_d     <= dram_dq_in0[7:0];
+   dram_dq_out1   <= sr_data[7:0];
+   dram_rwds_oe_l <= rwds_oe_ff;
+   dram_rwds_out1 <= byte_wr_en;// Note: rwds is a mask, 1==Don't Write Byte
+
+   dram_dq_oe_l <= dq_oe_ff;
+   //cs_l_reg    <= ~ cs_loc;
 
    if ( reset == 1 ) begin
-     cs_l_reg <= 1;
+   //  cs_l_reg <= 1;
    end 
 
  end
 end // proc_out
-  assign dram_cs_l = cs_l_reg;
+  assign dram_cs_l = reset ? 1 : !cs_loc;
 
 
 endmodule // hyper_xface.v

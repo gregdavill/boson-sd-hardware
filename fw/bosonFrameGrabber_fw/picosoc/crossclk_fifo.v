@@ -102,7 +102,7 @@ module BramFifo(CLK0, RST0, Q, DEQ, EMPTY,
 
   
   BRAM2 #(.W_A(ADDR_LEN), .W_D(DATA_WIDTH))
-  ram (.CLK0(CLK0), .ADDR0(head), .D0(16'h0), .WE0(1'b0), .Q0(Q), // read
+  ram (.CLK0(CLK0), .ADDR0(head), .D0(0), .WE0(1'b0), .Q0(Q), // read
        .CLK1(CLK1), .ADDR1(tail), .D1(D), .WE1(ram_we), .Q1()); // write
   
 endmodule
