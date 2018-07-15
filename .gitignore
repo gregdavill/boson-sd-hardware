@@ -22,3 +22,33 @@ _autosave-*
 
 output
 outputs
+
+# Add Lattice Diamond ignores
+impl1
+syn_results
+archiv
+.recovery
+*_tcr.dir
+.*.ini
+*.asd
+*.asdb
+*.awb
+*.awc
+*.bak
+*.ccl
+*.cfg
+*.cmd
+*.cst
+*.fdc
+*.htm
+*.html
+*.log
+*.ngd
+*.ngo
+*.tcl
+*.svf
+*.trc
+*.vhm
+*.xml
+*.zip
+*~

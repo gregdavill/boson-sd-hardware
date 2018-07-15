@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BaliProject version="3.2" title="bosonECP5" device="LFE5U-25F-6MG285C" default_implementation="impl1">
+    <Options/>
+    <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="Strategy1">
+        <Options def_top="hyper_xface" top="ecp5demo"/>
+        <Source name="source/ecp5demo.v" type="Verilog" type_short="Verilog">
+            <Options top_module="ecp5demo"/>
+        </Source>
+        <Source name="source/picosoc.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/picorv32.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/pll.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/arbiter/arbiter.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/wb_arbiter.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/wb_cdc.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/wb_data_resize.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/wb_intercon_gen.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/wb_mux.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/wb_upsizer.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/bistable_domain_cross.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/byte_en_reg.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/edge_detect.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/generic_dpram.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/generic_fifo_dc_gray.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/monostable_domain_cross.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_clock_divider.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_cmd_master.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_cmd_serial_host.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_controller_wb.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_crc_7.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_crc_16.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_data_master.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_data_serial_host.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_data_xfer_trig.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_fifo_filler.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sd_wb_sel_ctrl.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sdc_dma/verilog/sdc_controller.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/txuartlite.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/spimemio_wb.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/spimemio.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/simpleuart_wb.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/simpleuart.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/picosoc_ram_wb.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/hyper_xface.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wbgpio.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">
+            <Options/>
+        </Source>
+        <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
+            <Options/>
+        </Source>
+    </Implementation>
+    <Strategy name="Strategy1" file="bosonECP51.sty"/>
+</BaliProject>
