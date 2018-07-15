@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name Connectors_JST)(type KiCad)(uri "$(KISYSMOD)/Connectors_JST.pretty")(options "")(descr ""))
+  (lib (name bosonFrameGrabber)(type KiCad)(uri "$(KIPRJMOD)/bosonFrameGrabber.pretty")(options "")(descr ""))
+  (lib (name Connectors_Molex)(type KiCad)(uri "$(KISYSMOD)/Connectors_Molex.pretty")(options "")(descr ""))
+)

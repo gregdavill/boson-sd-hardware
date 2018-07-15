@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name bosonFrameGrabber)(type Legacy)(uri ${KIPRJMOD}/bosonFrameGrabber.lib)(options "")(descr ""))
+  (lib (name ecp5_lib)(type Legacy)(uri ${KIPRJMOD}/ecp5_lib.lib)(options "")(descr ""))
+)
