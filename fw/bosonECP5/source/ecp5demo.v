@@ -59,8 +59,15 @@ module ecp5demo (
 	input wire SDMMC_CD,
 	inout wire [3:0] SDMMC_DATA,
 	inout wire SDMMC_CMD,
-	output wire SDMMC_CK
-	
+	output wire SDMMC_CK,
+
+	/* 16bit CMOS Camera interface */
+	input [15:0] BOSON_DATA,
+	input BOSON_CLK,
+	input BOSON_VSYNC,
+	input BOSON_HSYNC,
+	input BOSON_VALID,
+	output BOSON_RESET
 );
 
 	wire clk,clk_90,pll_lock;
@@ -94,6 +101,18 @@ module ecp5demo (
 	wire        wb_s2m_picorv32_ack;
 	wire        wb_s2m_picorv32_err;
 	wire        wb_s2m_picorv32_rty;
+	wire [31:0] wb_m2s_ccc_master_adr;
+	wire [31:0] wb_m2s_ccc_master_dat;
+	wire  [3:0] wb_m2s_ccc_master_sel;
+	wire        wb_m2s_ccc_master_we;
+	wire        wb_m2s_ccc_master_cyc;
+	wire        wb_m2s_ccc_master_stb;
+	wire  [2:0] wb_m2s_ccc_master_cti;
+	wire  [1:0] wb_m2s_ccc_master_bte;
+	wire [31:0] wb_s2m_ccc_master_dat;
+	wire        wb_s2m_ccc_master_ack;
+	wire        wb_s2m_ccc_master_err;
+	wire        wb_s2m_ccc_master_rty;
 	wire [31:0] wb_m2s_sdc_master_adr;
 	wire [31:0] wb_m2s_sdc_master_dat;
 	wire  [3:0] wb_m2s_sdc_master_sel;
@@ -177,7 +196,20 @@ module ecp5demo (
 	wire [31:0] wb_s2m_sdc_slave_dat;
 	wire        wb_s2m_sdc_slave_ack;
 	wire        wb_s2m_sdc_slave_err;
-	wire        wb_s2m_sdc_slave_rty;
+	wire        wb_s2m_sdc_slave_rty;	
+	wire [31:0] wb_m2s_ccc_slave_adr;
+	wire [31:0] wb_m2s_ccc_slave_dat;
+	wire  [3:0] wb_m2s_ccc_slave_sel;
+	wire        wb_m2s_ccc_slave_we;
+	wire        wb_m2s_ccc_slave_cyc;
+	wire        wb_m2s_ccc_slave_stb;
+	wire  [2:0] wb_m2s_ccc_slave_cti;
+	wire  [1:0] wb_m2s_ccc_slave_bte;
+	wire [31:0] wb_s2m_ccc_slave_dat;
+	wire        wb_s2m_ccc_slave_ack;
+	wire        wb_s2m_ccc_slave_err;
+	wire        wb_s2m_ccc_slave_rty;
+
 
 	wb_intercon wb_intercon0
 	   (.wb_clk_i             (wb_clk),
@@ -206,6 +238,18 @@ module ecp5demo (
 		.wb_sdc_master_ack_o  (wb_s2m_sdc_master_ack),
 		.wb_sdc_master_err_o  (wb_s2m_sdc_master_err),
 		.wb_sdc_master_rty_o  (wb_s2m_sdc_master_rty),
+		.wb_ccc_master_adr_i (wb_m2s_ccc_master_adr),
+		.wb_ccc_master_dat_i (wb_m2s_ccc_master_dat),
+		.wb_ccc_master_sel_i (wb_m2s_ccc_master_sel),
+		.wb_ccc_master_we_i  (wb_m2s_ccc_master_we),
+		.wb_ccc_master_cyc_i (wb_m2s_ccc_master_cyc),
+		.wb_ccc_master_stb_i (wb_m2s_ccc_master_stb),
+		.wb_ccc_master_cti_i (wb_m2s_ccc_master_cti),
+		.wb_ccc_master_bte_i (wb_m2s_ccc_master_bte),
+		.wb_ccc_master_dat_o (wb_s2m_ccc_master_dat),
+		.wb_ccc_master_ack_o (wb_s2m_ccc_master_ack),
+		.wb_ccc_master_err_o (wb_s2m_ccc_master_err),
+		.wb_ccc_master_rty_o (wb_s2m_ccc_master_rty),
 		.wb_ram0_adr_o        (wb_m2s_ram0_adr),
 		.wb_ram0_dat_o        (wb_m2s_ram0_dat),
 		.wb_ram0_sel_o        (wb_m2s_ram0_sel),
@@ -277,7 +321,19 @@ module ecp5demo (
 		.wb_sdc_slave_dat_i   (wb_s2m_sdc_slave_dat),
 		.wb_sdc_slave_ack_i   (wb_s2m_sdc_slave_ack),
 		.wb_sdc_slave_err_i   (wb_s2m_sdc_slave_err),
-		.wb_sdc_slave_rty_i   (wb_s2m_sdc_slave_rty)
+		.wb_sdc_slave_rty_i   (wb_s2m_sdc_slave_rty),
+		.wb_ccc_slave_adr_o  (wb_m2s_ccc_slave_adr),
+		.wb_ccc_slave_dat_o  (wb_m2s_ccc_slave_dat),
+		.wb_ccc_slave_sel_o  (wb_m2s_ccc_slave_sel),
+		.wb_ccc_slave_we_o   (wb_m2s_ccc_slave_we),
+		.wb_ccc_slave_cyc_o  (wb_m2s_ccc_slave_cyc),
+		.wb_ccc_slave_stb_o  (wb_m2s_ccc_slave_stb),
+		.wb_ccc_slave_cti_o  (wb_m2s_ccc_slave_cti),
+		.wb_ccc_slave_bte_o  (wb_m2s_ccc_slave_bte),
+		.wb_ccc_slave_dat_i  (wb_s2m_ccc_slave_dat),
+		.wb_ccc_slave_ack_i  (wb_s2m_ccc_slave_ack),
+		.wb_ccc_slave_err_i  (wb_s2m_ccc_slave_err),
+		.wb_ccc_slave_rty_i  (wb_s2m_ccc_slave_rty)
 	);
 
 
@@ -344,8 +400,8 @@ module ecp5demo (
 	assign ser_rx_dir = 0;
 	
 	
-
-	picosoc soc (
+	/* RISCV CPU */
+	picosoc cpu (
 		.wb_rst_i    (wb_rst   ),
 		.wb_clk_i    (wb_clk   ),
 	
@@ -361,44 +417,72 @@ module ecp5demo (
 		.irq_5        (1'b0        ),
 		.irq_6        (1'b0        ),
 		.irq_7        (1'b0        )
-
 	);
 	
 	
-		//SD Card interface
-		wire sd_cmd_oe;
-		wire sd_dat_oe;
-		wire sd_cmd_in;
-		wire [3:0] sd_dat_in;
-		wire sd_cmd_out;
-		wire [3:0] sd_dat_out;
-		wire sd_clk_pad_o;
-		
+	// CMOS interface
 
-	 /*
-	  * SD IO port
-	  */
-	  
-	  
-	reg [3:0] dat_out_del;
-	always @(negedge sd_clk_pad_o)
-		dat_out_del <= sd_dat_out;
+	wire [15:0] cmos_data_in;
+	wire cmos_clk_in;
+	wire cmos_vsync_in;
+	wire cmos_hsync_in;
+	wire cmos_valid_in;
+	wire cmos_reset_out;
+
+	IB cmos_data_io_buf [15:0] (
+		.I(BOSON_DATA),
+		.O(cmos_data_in)
+	);
+	IB cmos_hsync_io_buf (
+		.I(BOSON_HSYNC),
+		.O(cmos_hsync_in)
+	);
+	IB cmos_vsync_io_buf (
+		.I(BOSON_VSYNC),
+		.O(cmos_vsync_in)
+	);
+	IB cmos_valid_io_buf (
+		.I(BOSON_VALID),
+		.O(cmos_valid_in)
+	);
+	IB cmos_clk_io_buf (
+		.I(BOSON_CLK),
+		.O(cmos_clk_in)
+	);
+	OB cmos_reset_oi_buf (
+		.O(BOSON_RESET),
+		.I(cmos_reset_out)
+	);
+
+	//SD Card interface
+	wire sd_cmd_oe;
+	wire sd_dat_oe;
+	wire sd_cmd_in;
+	wire [3:0] sd_dat_in;
+	wire sd_cmd_out;
+	wire [3:0] sd_dat_out;
+	wire sd_clk_pad_o;
 		
+	/*
+	* SD IO port
+	*/
+	reg [3:0] dat_out_ff;
+	always @(negedge sd_clk_pad_o)
+		dat_out_ff <= sd_dat_out;
 	BBPU sdmmc_io_buf[3:0] (
 		.B(SDMMC_DATA),
 		.T(!sd_dat_oe),
-		.I(dat_out_del),
+		.I(dat_out_ff),
 		.O(sd_dat_in)
 	);
 	
-	
-	reg cmd_out_del;
+	reg cmd_out_ff;
 	always @(negedge sd_clk_pad_o)
-		cmd_out_del <= sd_cmd_out;
+		cmd_out_ff <= sd_cmd_out;
 	BBPU sdmmc_cmd_buf (
 		.B(SDMMC_CMD),
 		.T(!sd_cmd_oe),
-		.I(cmd_out_del),
+		.I(cmd_out_ff),
 		.O(sd_cmd_in)
 	);
 	
@@ -406,10 +490,7 @@ module ecp5demo (
 		.O(SDMMC_CK),
 		.I(sd_clk_pad_o)
 	);
-	
 	 
-	
-	
 	simpleuart_wb uart0(
 		.wb_clk_i(wb_clk          ),
 		.wb_rst_i(wb_rst          ),
@@ -515,7 +596,36 @@ module ecp5demo (
 		.sd_clk_i_pad  (wb_clk       )
 	);
 	 
-	 
+	cc_controller cc_controller_top0(
+        .wb_clk_i      (wb_clk                     ),
+		.wb_rst_i      (wb_rst                     ),
+		.wb_dat_i      (wb_m2s_ccc_slave_dat       ),
+		.wb_dat_o      (wb_s2m_ccc_slave_dat       ),
+		.wb_adr_i      (wb_m2s_ccc_slave_adr[7:0]  ),
+		.wb_sel_i      (wb_m2s_ccc_slave_sel       ),
+		.wb_we_i       (wb_m2s_ccc_slave_we        ),
+		.wb_stb_i      (wb_m2s_ccc_slave_stb       ),
+		.wb_cyc_i      (wb_m2s_ccc_slave_cyc       ),
+		.wb_ack_o      (wb_s2m_ccc_slave_ack       ),
+		.m_wb_adr_o    (wb_m2s_ccc_master_adr      ),
+		.m_wb_sel_o    (wb_m2s_ccc_master_sel      ),
+		.m_wb_we_o     (wb_m2s_ccc_master_we       ),
+		.m_wb_dat_o    (wb_m2s_ccc_master_dat      ),
+		.m_wb_dat_i    (wb_s2m_ccc_master_dat      ),
+		.m_wb_cyc_o    (wb_m2s_ccc_master_cyc      ),
+		.m_wb_stb_o    (wb_m2s_ccc_master_stb      ),
+		.m_wb_ack_i    (wb_s2m_ccc_master_ack      ),
+		.m_wb_cti_o    (wb_m2s_ccc_master_cti      ),
+		.m_wb_bte_o    (wb_m2s_ccc_master_bte      ),
+		
+		   // CMOS data interface
+		.cmos_data_i   (cmos_data_in),
+		.cmos_clk_i    (cmos_clk_in),
+		.cmos_vsync_i  (cmos_vsync_in),
+		.cmos_hsync_i  (cmos_hsync_in),
+		.cmos_valid_i  (cmos_valid_in),
+		.cmos_reset_o  (cmos_reset_out)
+    );
 	
 
 endmodule
