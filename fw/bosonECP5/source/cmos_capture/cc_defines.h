@@ -47,6 +47,6 @@
 //////////////////////////////////////////////////////////////////////
 
 //register addreses
-`define data_count 8'h00
-`define status 8'h04
-`define dst_src_addr 8'h40
+`define ccc_data_count 8'h00
+`define ccc_status 8'h04
+`define ccc_dst_src_addr 8'h40

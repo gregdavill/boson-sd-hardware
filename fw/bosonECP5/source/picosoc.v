@@ -41,7 +41,9 @@ module picosoc (
 
 	input  irq_5,
 	input  irq_6,
-	input  irq_7
+	input  irq_7,
+	
+	output trap
 );
 	parameter integer MEM_WORDS = 2048;
 	parameter [31:0] STACKADDR = (4*MEM_WORDS);       // end of memory
@@ -73,6 +75,8 @@ module picosoc (
 		.ENABLE_IRQ(1),
 		.ENABLE_IRQ_QREGS(0)
 	) cpu (
+		.trap        (trap       ),
+	
 		.wb_rst_i    (wb_rst_i   ),
 		.wb_clk_i    (wb_clk_i   ),
 	

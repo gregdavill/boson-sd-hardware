@@ -91,7 +91,7 @@ module wb_mux
 ///////////////////////////////////////////////////////////////////////////////
 
    //Use parameter instead of localparam to work around a bug in Xilinx ISE
-   localparam slave_sel_bits = num_slaves > 1 ? $clog2(num_slaves) : 1;
+   parameter slave_sel_bits = num_slaves > 1 ? $clog2(num_slaves) : 1;
 
    reg  			 wbm_err;
    wire [slave_sel_bits-1:0] 	 slave_sel;
@@ -123,22 +123,25 @@ module wb_mux
 
    assign slave_sel = ff1(match);
 
-   always @(posedge wb_clk_i)
+   always @(posedge wb_clk_i) begin
      wbm_err <= wbm_cyc_i & !(|match);
+     
+   end
 
    assign wbs_adr_o = {num_slaves{wbm_adr_i}};
    assign wbs_dat_o = {num_slaves{wbm_dat_i}};
    assign wbs_sel_o = {num_slaves{wbm_sel_i}};
    assign wbs_we_o  = {num_slaves{wbm_we_i}};
-
+   
    assign wbs_cyc_o = match & (wbm_cyc_i << slave_sel);
+   //assign wbs_stb_o = match & (wbm_stb_i << slave_sel);
    assign wbs_stb_o = {num_slaves{wbm_stb_i}};
 
    assign wbs_cti_o = {num_slaves{wbm_cti_i}};
    assign wbs_bte_o = {num_slaves{wbm_bte_i}};
 
    assign wbm_dat_o = wbs_dat_i[slave_sel*dw+:dw];
-   assign wbm_ack_o = wbs_ack_i[slave_sel];
+   assign wbm_ack_o = wbs_ack_i[slave_sel] | wbm_err;
    assign wbm_err_o = wbs_err_i[slave_sel] | wbm_err;
    assign wbm_rty_o = wbs_rty_i[slave_sel];
 

@@ -20,8 +20,7 @@ module simpleuart_wb(
 	
 	wire o_busy;
 
-	
-	assign wb_ack_o = sel_reg_div ? (wb_cyc_i) : ((!o_busy && wb_we_i) || ( ! wb_we_i && wb_stb_i));
+	wire wb_ack_o;
 	//assign wb_dat_o = 32'b0;
 
 
@@ -30,7 +29,10 @@ module simpleuart_wb(
 	wire sel_reg_dat = (wb_adr_i[3:0] == 4'h4) && wb_cyc_i && wb_stb_i;
 
 	assign wb_dat_o = sel_reg_div ? reg_div_dat_o : reg_dat_dat_o;
-
+	
+	//always @(wb_clk_i)
+	assign	wb_ack_o = sel_reg_div ? (wb_cyc_i) : ((!o_busy && wb_we_i && wb_cyc_i) || ( ! wb_we_i && wb_stb_i && wb_cyc_i));
+	
 	simpleuart simpleuart (
 	.clk(wb_clk_i),
 	.resetn(!wb_rst_i),

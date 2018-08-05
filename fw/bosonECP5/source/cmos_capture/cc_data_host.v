@@ -2,20 +2,20 @@
 
 module cc_data_host(
 		   input wire cmos_clk_i,
-           input rst,
-           //Rx Fifo
-           output reg [31:0] data_out,
-           output reg we,
-           //tristate data
+           input wire rst,
+           //Camera data / Control signals
 		   input wire [15:0] cmos_data_i, 
 		   input wire cmos_vsync_i,
 		   input wire cmos_hsync_i,
 		   input wire cmos_valid_i,
 		   output wire cmos_reset_o,
+		   
+		   output wire cmos_en_o,
+		   
            //Control signals
-		   input wire start,
+		   input wire arm,
 		   // data out
-		   output data_count_reg
+		   output reg [31:0] data_count_reg
        );
 
 
@@ -23,18 +23,26 @@ parameter SIZE = 6;
 reg [SIZE-1:0] state;
 reg [SIZE-1:0] next_state;
 parameter IDLE       = 6'b000001;
-parameter WRITE_DAT  = 6'b000010;
-parameter WRITE_CRC  = 6'b000100;
-parameter WRITE_BUSY = 6'b001000;
-parameter READ_WAIT  = 6'b010000;
-parameter READ_DAT   = 6'b100000;
+parameter ARM        = 6'b000010;
+parameter PASS       = 6'b000100;
+
+
+/* Vsync Detect will generate a 1 cycle pulse ever line */
+reg [1:0] vsync_sr;
+always @(posedge cmos_clk_i) 
+	vsync_sr[1:0] <= {vsync_sr[0], cmos_hsync_i};
+//	vsync_sr[1:0] <= {vsync_sr[0], cmos_vsync_i};
+
+wire vsync_detect;
+assign vsync_detect = (vsync_sr == 2'b10);
+
+/* Mask data based on state machine */
+assign cmos_en_o   = (state == PASS) ? cmos_valid_i : 1'b0;
 
 
 reg [31:0] data_byte_counter;
-reg [31:0] data_count_reg;
 
 assign cmos_reset_o = !rst;
-
 
 	always @(posedge cmos_clk_i) begin
 	  if(rst) begin
@@ -43,17 +51,24 @@ assign cmos_reset_o = !rst;
 	  end else begin
 		case (state)
 			IDLE: begin
-				if(cmos_vsync_i == 0) begin
-					data_byte_counter <= 0;
-					data_count_reg <= data_byte_counter;
+				if(arm == 1) begin
+					state <= ARM;
 				end
-				if(cmos_valid_i) begin
-					data_byte_counter <= data_byte_counter + 1; 
-				end
-				
-				data_count_reg <= {16'b0,cmos_data_i};
-				
 			end
+			
+			ARM: begin
+				/* Frame begin */
+				if(vsync_detect) begin
+					state <= PASS;
+				end				
+			end
+			PASS: begin
+				/* Frame over */
+				if(vsync_detect) begin
+					state <= IDLE;
+				end				
+			end
+			
 			default: begin
 				
 				end

@@ -59,55 +59,62 @@ module cc_controller_wb(
            wb_cyc_i, 
            wb_stb_i, 
            wb_ack_o,
-           cc_start,
            data_count_reg,
            status_reg,
-           dma_addr_reg
+           dma_addr_reg,
+		   arm_bit
        );
 
 // WISHBONE common
-input wb_clk_i;     // WISHBONE clock
-input wb_rst_i;     // WISHBONE reset
-input [31:0] wb_dat_i;     // WISHBONE data input
+input wire wb_clk_i;     // WISHBONE clock
+input wire wb_rst_i;     // WISHBONE reset
+input wire [31:0] wb_dat_i;     // WISHBONE data input
 output reg [31:0] wb_dat_o;     // WISHBONE data output
 // WISHBONE error output
 
 // WISHBONE slave
-input [7:0] wb_adr_i;     // WISHBONE address input
-input [3:0] wb_sel_i;     // WISHBONE byte select input
-input wb_we_i;      // WISHBONE write enable input
-input wb_cyc_i;     // WISHBONE cycle input
-input wb_stb_i;     // WISHBONE strobe input
+input wire [4:0] wb_adr_i;     // WISHBONE address input
+input wire [3:0] wb_sel_i;     // WISHBONE byte select input
+input wire wb_we_i;      // WISHBONE write enable input
+input wire wb_cyc_i;     // WISHBONE cycle input
+input wire wb_stb_i;     // WISHBONE strobe input
 output reg wb_ack_o;     // WISHBONE acknowledge output
-output reg cc_start;
 //Buss accessible registers
 input wire [31:0] data_count_reg;
 input wire [31:0] status_reg;
 
 //Register Controll
-output [31:0] dma_addr_reg;
+output wire [31:0] dma_addr_reg;
+output wire arm_bit;
 
 wire we;
 
 
+reg arm_start;
+reg [1:0] arm_sr;
+always @(posedge wb_clk_i) arm_sr <= {arm_sr[0] , arm_start};
+assign arm_bit = (arm_sr == 2'b01);
+
 assign we = (wb_we_i && ((wb_stb_i && wb_cyc_i) || wb_ack_o)) ? 1'b1 : 1'b0;
 
-byte_en_reg #(32) dma_addr_r(wb_clk_i, wb_rst_i, we && wb_adr_i == `dst_src_addr, wb_sel_i[3:0], wb_dat_i, dma_addr_reg);
+byte_en_reg #(32) dma_addr_r(wb_clk_i, wb_rst_i, we && wb_adr_i == `ccc_dst_src_addr, wb_sel_i[3:0], wb_dat_i, dma_addr_reg);
 
 
 always @(posedge wb_clk_i or posedge wb_rst_i)
 begin
     if (wb_rst_i)begin
         wb_ack_o <= 0;
+		arm_start <= 0;
     end
     else
     begin
+		arm_start <= 0;
         if ((wb_stb_i & wb_cyc_i) || wb_ack_o)begin
-            //if (wb_we_i) begin
-            //    case (wb_adr_i)
-            //        
-            //    endcase
-            //end
+            if (wb_we_i) begin
+                case (wb_adr_i)
+                  `ccc_status: arm_start <= wb_dat_i[0];    
+                endcase
+            end
             wb_ack_o <= wb_cyc_i & wb_stb_i & ~wb_ack_o;
         end
     end
@@ -120,9 +127,9 @@ always @(posedge wb_clk_i or posedge wb_rst_i)begin
     else
         if (wb_stb_i & wb_cyc_i) begin //CS
             case (wb_adr_i)
-                `data_count: wb_dat_o <= data_count_reg;
-                `status: wb_dat_o <= status_reg;
-                `dst_src_addr: wb_dat_o <= dma_addr_reg;
+                `ccc_data_count: wb_dat_o <= data_count_reg;
+                `ccc_status:     wb_dat_o <= status_reg;
+                `ccc_dst_src_addr: wb_dat_o <= dma_addr_reg;
             endcase
         end
 end
