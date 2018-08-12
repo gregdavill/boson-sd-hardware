@@ -50,15 +50,15 @@ module ecp5demo (
 	output wire fpga_reset,
 	
 	/* HYPER RAM SIGNALS */
-	inout wire [1:0] HRAM_CK,
+	output wire [1:0] HRAM_CK,
 	output wire  HRAM_CS,
 	inout wire HRAM_RWDS,
 	inout wire [7:0] HRAM_DQ,
 	output wire HRAM_RESET,
 	
 	input wire SDMMC_CD,
-	inout wire [3:0] SDMMC_DATA,
-	inout wire SDMMC_CMD,
+	output wire [3:0] SDMMC_DATA,
+	output wire SDMMC_CMD,
 	output wire SDMMC_CK,
 
 	/* 16bit CMOS Camera interface */
@@ -77,7 +77,7 @@ module ecp5demo (
 	mainPLL _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
 
 	
-	reg [12:0] reset_cnt = 0;
+	reg [13:0] reset_cnt = 0;
 	wire resetn = &reset_cnt;
 
 	always @(posedge clk) begin
@@ -91,7 +91,7 @@ module ecp5demo (
 
 	wire trap;
 
-	wire [31:0] wb_m2s_picorv32_adr;
+wire [31:0] wb_m2s_picorv32_adr;
 wire [31:0] wb_m2s_picorv32_dat;
 wire  [3:0] wb_m2s_picorv32_sel;
 wire        wb_m2s_picorv32_we;
@@ -235,6 +235,30 @@ wire [31:0] wb_s2m_wb_streamer_slave_dat;
 wire        wb_s2m_wb_streamer_slave_ack;
 wire        wb_s2m_wb_streamer_slave_err;
 wire        wb_s2m_wb_streamer_slave_rty;
+wire [31:0] wb_m2s_hram0_cfg_adr;
+wire [31:0] wb_m2s_hram0_cfg_dat;
+wire  [3:0] wb_m2s_hram0_cfg_sel;
+wire        wb_m2s_hram0_cfg_we;
+wire        wb_m2s_hram0_cfg_cyc;
+wire        wb_m2s_hram0_cfg_stb;
+wire  [2:0] wb_m2s_hram0_cfg_cti;
+wire  [1:0] wb_m2s_hram0_cfg_bte;
+wire [31:0] wb_s2m_hram0_cfg_dat;
+wire        wb_s2m_hram0_cfg_ack;
+wire        wb_s2m_hram0_cfg_err;
+wire        wb_s2m_hram0_cfg_rty;
+wire [31:0] wb_m2s_hram0_adr;
+wire [31:0] wb_m2s_hram0_dat;
+wire  [3:0] wb_m2s_hram0_sel;
+wire        wb_m2s_hram0_we;
+wire        wb_m2s_hram0_cyc;
+wire        wb_m2s_hram0_stb;
+wire  [2:0] wb_m2s_hram0_cti;
+wire  [1:0] wb_m2s_hram0_bte;
+wire [31:0] wb_s2m_hram0_dat;
+wire        wb_s2m_hram0_ack;
+wire        wb_s2m_hram0_err;
+wire        wb_s2m_hram0_rty;
 
 wb_intercon wb_intercon0
    (.wb_clk_i                   (wb_clk),
@@ -382,7 +406,34 @@ wb_intercon wb_intercon0
     .wb_wb_streamer_slave_dat_i (wb_s2m_wb_streamer_slave_dat),
     .wb_wb_streamer_slave_ack_i (wb_s2m_wb_streamer_slave_ack),
     .wb_wb_streamer_slave_err_i (wb_s2m_wb_streamer_slave_err),
-    .wb_wb_streamer_slave_rty_i (wb_s2m_wb_streamer_slave_rty));
+    .wb_wb_streamer_slave_rty_i (wb_s2m_wb_streamer_slave_rty),
+    .wb_hram0_cfg_adr_o         (wb_m2s_hram0_cfg_adr),
+    .wb_hram0_cfg_dat_o         (wb_m2s_hram0_cfg_dat),
+    .wb_hram0_cfg_sel_o         (wb_m2s_hram0_cfg_sel),
+    .wb_hram0_cfg_we_o          (wb_m2s_hram0_cfg_we),
+    .wb_hram0_cfg_cyc_o         (wb_m2s_hram0_cfg_cyc),
+    .wb_hram0_cfg_stb_o         (wb_m2s_hram0_cfg_stb),
+    .wb_hram0_cfg_cti_o         (wb_m2s_hram0_cfg_cti),
+    .wb_hram0_cfg_bte_o         (wb_m2s_hram0_cfg_bte),
+    .wb_hram0_cfg_dat_i         (wb_s2m_hram0_cfg_dat),
+    .wb_hram0_cfg_ack_i         (wb_s2m_hram0_cfg_ack),
+    .wb_hram0_cfg_err_i         (wb_s2m_hram0_cfg_err),
+    .wb_hram0_cfg_rty_i         (wb_s2m_hram0_cfg_rty),
+    .wb_hram0_adr_o             (wb_m2s_hram0_adr),
+    .wb_hram0_dat_o             (wb_m2s_hram0_dat),
+    .wb_hram0_sel_o             (wb_m2s_hram0_sel),
+    .wb_hram0_we_o              (wb_m2s_hram0_we),
+    .wb_hram0_cyc_o             (wb_m2s_hram0_cyc),
+    .wb_hram0_stb_o             (wb_m2s_hram0_stb),
+    .wb_hram0_cti_o             (wb_m2s_hram0_cti),
+    .wb_hram0_bte_o             (wb_m2s_hram0_bte),
+    .wb_hram0_dat_i             (wb_s2m_hram0_dat),
+    .wb_hram0_ack_i             (wb_s2m_hram0_ack),
+    .wb_hram0_err_i             (wb_s2m_hram0_err),
+    .wb_hram0_rty_i             (wb_s2m_hram0_rty));
+
+
+
 
 
 	assign wb_s2m_ram0_err = 1'b0;
@@ -515,6 +566,7 @@ wb_intercon wb_intercon0
 	/*
 	* SD IO port
 	*/
+	/*
 	reg [3:0] dat_out_ff;
 	always @(negedge sd_clk_pad_o)
 		dat_out_ff <= sd_dat_out;
@@ -539,7 +591,9 @@ wb_intercon wb_intercon0
 		.O(SDMMC_CK),
 		.I(sd_clk_pad_o)
 	);
-	
+	*/
+
+
 	
 	wire uart0_rx,uart0_tx;
 	wire uart1_rx,uart1_tx;
@@ -578,10 +632,12 @@ wb_intercon wb_intercon0
 		.i_uart_rx(uart0_rx), 
 		.o_uart_tx(uart0_tx)
 	);
+
+	
 	
 	wbuart uart1(
 		.i_clk(wb_clk),
-		.i_rst(wb_rst),
+		.i_rst(1'b1),
 		//
 		.i_wb_cyc (wb_m2s_uart1_cyc),
 		.i_wb_stb (wb_m2s_uart1_stb && wb_m2s_uart0_cyc), 
@@ -597,7 +653,81 @@ wb_intercon wb_intercon0
 	
 
 	
+
+
+wire hb_clk_o;
+wire hb_cs_o;
+wire hb_rwds_o;
+wire hb_rwds_i;
+wire hb_rwds_dir;
+wire [7:0] hb_dq_o;
+wire [7:0] hb_dq_i;
+wire hb_dq_dir;
+wire hb_rst_o;
+
+	wb_hyper wb_hyper (
+	.wb_clk_i     (wb_clk),
+	.wb_rst_i     (wb_rst),
+	.wb_dat_i     (wb_m2s_hram0_dat),
+	.wb_adr_i     (wb_m2s_hram0_adr[23:0]),
+	.wb_sel_i     (wb_m2s_hram0_sel),
+	.wb_cti_i     (wb_m2s_hram0_cti),
+	.wb_we_i      (wb_m2s_hram0_we),
+	.wb_cyc_i     (wb_m2s_hram0_cyc),
+	.wb_stb_i     (wb_m2s_hram0_stb),
+	.wb_dat_o     (wb_s2m_hram0_dat),
+	.wb_ack_o     (wb_s2m_hram0_ack),
+	.wb_cfg_dat_i (wb_m2s_hram0_cfg_dat),
+	.wb_cfg_dat_o (wb_s2m_hram0_cfg_dat),
+	.wb_cfg_adr_i (wb_m2s_hram0_cfg_adr[7:0]),
+	.wb_cfg_sel_i (wb_m2s_hram0_cfg_sel),
+	.wb_cfg_we_i  (wb_m2s_hram0_cfg_we),
+	.wb_cfg_cyc_i (wb_m2s_hram0_cfg_cyc),
+	.wb_cfg_stb_i (wb_m2s_hram0_cfg_stb),
+	.wb_cfg_ack_o (wb_s2m_hram0_cfg_ack),
+	.hb_clk_o     (hb_clk_o            ),
+	.hb_cs_o      (hb_cs_o             ),
+	.hb_rwds_o    (hb_rwds_o           ),
+	.hb_rwds_i    (hb_rwds_i           ),
+	.hb_rwds_dir  (hb_rwds_dir         ),
+	.hb_dq_o      (hb_dq_o             ),
+	.hb_dq_i      (hb_dq_i             ),
+	.hb_dq_dir    (hb_dq_dir           ),
+	.hb_rst_o     (hb_rst_o            )
+);
+
+
+
+
+	BBPU hr_dq_b[7:0] (
+		.B(HRAM_DQ),
+		.T(hb_dq_dir),
+		.I(hb_dq_o),
+		.O(hb_dq_i)
+	);
 	
+	BBPU hr_rwds_b (
+		.B(HRAM_RWDS),
+		.T(hb_rwds_dir),
+		.I(hb_rwds_o),
+		.O(hb_rwds_i)
+	);
+
+	OB hr_ck_b [1:0] (
+		.O(HRAM_CK),
+		.I({!hb_clk_o,hb_clk_o})
+	);
+
+	OB hr_res_b (
+		.O(HRAM_RESET),
+		.I(hb_rst_o)
+	);
+
+	OB hr_cs_b (
+		.O(HRAM_CS),
+		.I(hb_cs_o)
+	);
+
 	
 	spimemio_wb flash0
 	(
@@ -651,6 +781,7 @@ wb_intercon wb_intercon0
 	);
 
 	
+	
 	 /*
 	  * 
 	  */
@@ -688,7 +819,6 @@ wb_intercon wb_intercon0
 	);
 	 
 	 
-	
 	
 	cc_controller cc_controller_top0(
         .wb_clk_i      (wb_clk                     ),
@@ -728,6 +858,21 @@ wb_intercon wb_intercon0
 		.cmos_valid_i  (cmos_valid_in),
 		.cmos_reset_o  (cmos_reset_out)
     );
+	
+	
+	OB sdmmc_ck_buf_0 (
+		.O(SDMMC_CK),
+		.I(wb_clk)
+	);
+	OB sdmmc_ck_buf_1 (
+		.O(SDMMC_CMD),
+		.I(wb_m2s_picorv32_cyc)
+	);
+	OB sdmmc_ck_buf_2 (
+		.O(SDMMC_DATA[0]),
+		.I(wb_s2m_picorv32_err)
+	);
+	
 	
 `ifdef SUMP2
 

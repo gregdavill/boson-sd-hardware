@@ -94,7 +94,7 @@ module wb_mux
    parameter slave_sel_bits = num_slaves > 1 ? $clog2(num_slaves) : 1;
 
    reg  			 wbm_err;
-   wire [slave_sel_bits-1:0] 	 slave_sel;
+   reg [slave_sel_bits-1:0] 	 slave_sel;
    wire [num_slaves-1:0] 	 match;
 
    genvar 			 idx;
@@ -108,23 +108,26 @@ module wb_mux
 //
 // Find First 1 - Start from MSB and count downwards, returns 0 when no bit set
 //
-   function [slave_sel_bits-1:0] ff1;
-      input [num_slaves-1:0] in;
-      integer 		     i;
+   
 
-      begin
-	 ff1 = 0;
-	 for (i = num_slaves-1; i >= 0; i=i-1) begin
-	    if (in[i])
-	      ff1 = i;
-	 end
-      end
-   endfunction
+   reg [slave_sel_bits-1:0] ff1;
+integer i;
+       
+   always @(posedge wb_clk_i) begin
+	   for (i = num_slaves-1; i >= 0; i=i-1) begin
+	    if (match[i])
+	      slave_sel <= i;
+     end
+   end
 
-   assign slave_sel = ff1(match);
+   //reg [slave_sel_bits-1:0] 	 slave_sel_ff;
+   //reg [num_slaves-1:0] 	 match_ff;
 
    always @(posedge wb_clk_i) begin
      wbm_err <= wbm_cyc_i & !(|match);
+	 
+	// match_ff <= match;
+	// slave_sel_ff <= slave_sel;
      
    end
 
@@ -141,7 +144,7 @@ module wb_mux
    assign wbs_bte_o = {num_slaves{wbm_bte_i}};
 
    assign wbm_dat_o = wbs_dat_i[slave_sel*dw+:dw];
-   assign wbm_ack_o = wbs_ack_i[slave_sel] | wbm_err;
+   assign wbm_ack_o = wbs_ack_i[slave_sel]| wbm_err;
    assign wbm_err_o = wbs_err_i[slave_sel] | wbm_err;
    assign wbm_rty_o = wbs_rty_i[slave_sel];
 

@@ -91,7 +91,8 @@
 --     CfgReg0 write(0x00000800, 0x8fe40000);
 -- ***************************************************************************/
 `default_nettype none // Strictly enforce all nets to be declared
-  
+`timescale 1 ps/1 ps
+
 module hyper_xface 
 (
   input  wire         reset,
@@ -100,7 +101,7 @@ module hyper_xface
   input  wire         wr_req,
   input  wire         mem_or_reg,
   input  wire [3:0]   wr_byte_en,
-  input  wire [5:0]   rd_num_dwords,
+  input  wire         rd_burst_en,
   input  wire [31:0]  addr,
   input  wire [31:0]  wr_d,
   output reg  [31:0]  rd_d,
@@ -153,12 +154,15 @@ module hyper_xface
   reg          rd_done;
   reg  [3:0]   rd_cnt;
   reg  [2:0]   rd_fsm;
-  reg  [5:0]   rd_dwords_cnt;
+  reg          rd_burst;
   reg          sample_now;
   reg          burst_wr_jk;
   reg          burst_wr_jk_clr;
   reg  [4:0]   burst_wr_sr;
   reg  [35:0]  burst_wr_d;
+
+  reg dram_dq_oe;
+  reg dram_rwds_oe;
 
 
   assign dram_rst_l = ~ reset;
@@ -332,14 +336,11 @@ always @ ( posedge clk ) begin : proc_fsm
    data_shift <= 0;
    wait_shift <= 0;
    burst_wr_jk_clr <= 0;
-   if ( rd_req == 1 ) begin
-     rd_dwords_cnt <= rd_num_dwords[5:0];
-   end
-
+   
    if ( ck_phs[0] == 1 ) begin
      if ( fsm_addr != 3'd0 ) begin
-       dram_dq_oe_l   <= 0; // D[7:0] is Output 
-       dram_rwds_oe_l <= 1; // RWDS is Input
+       dram_dq_oe   <= 0; // D[7:0] is Output 
+       dram_rwds_oe <= 1; // RWDS is Input
        fsm_addr <= fsm_addr - 1;
        if ( fsm_addr == 3'd1 ) begin
          // Register Writes have zero latency
@@ -394,22 +395,22 @@ always @ ( posedge clk ) begin : proc_fsm
 
      if ( fsm_wait != 6'd0 || fsm_data != 4'd0 ) begin
        if ( rw_bit == 1 ) begin
-         dram_dq_oe_l   <= 1; // Input for Reads
-         dram_rwds_oe_l <= 1; // Input for Reads
+         dram_dq_oe   <= 1; // Input for Reads
+         dram_rwds_oe <= 1; // Input for Reads
        end else begin
-         dram_dq_oe_l   <= 0; // Output for Writes
-         dram_rwds_oe_l <= 0; // Output for Writes
+         dram_dq_oe   <= 0; // Output for Writes
+         dram_rwds_oe <= 0; // Output for Writes
        end
      end
    end // if ( ck_phs[0] == 1 ) begin
 
    if ( rd_done == 1 ) begin
-     if ( rd_dwords_cnt == 6'd1 ) begin
+     if ( !rd_burst ) begin
        run_jk    <= 0;
        run_rd_jk <= 0;
        fsm_wait  <= 6'd0;
      end else begin
-       rd_dwords_cnt <= rd_dwords_cnt - 1;
+       //rd_dwords_cnt <= rd_dwords_cnt - 1;
        fsm_wait      <= 6'd63;// This actually ends from RWDS strobing
      end 
    end 
@@ -419,8 +420,8 @@ always @ ( posedge clk ) begin : proc_fsm
      fsm_wait       <= 6'd0;
      fsm_data       <= 4'd0;
      run_jk         <= 1;
-     dram_dq_oe_l   <= 1; // Default Input
-     dram_rwds_oe_l <= 1; // Default Input
+     dram_dq_oe   <= 1; // Default Input
+     dram_rwds_oe <= 1; // Default Input
    end
 
    run_jk_sr <= { run_jk_sr[2:0], run_jk };
@@ -428,8 +429,8 @@ always @ ( posedge clk ) begin : proc_fsm
      cs_loc <= 1;
    end else if ( run_jk_sr[1:0] == 2'd0 ) begin
      cs_loc <= 0;
-     dram_dq_oe_l   <= 1; // Default Input
-     dram_rwds_oe_l <= 1; // Default Input
+     dram_dq_oe   <= 1; // Default Input
+     dram_rwds_oe <= 1; // Default Input
    end 
 
    if ( reset == 1 ) begin 
@@ -492,6 +493,7 @@ always @ ( posedge clk ) begin : proc_rd_sr
      if ( rd_cnt == 4'd3 ) begin
        rd_done <= 1;// Call it a day after 4 bytes
        rd_cnt  <= 4'd0;
+	   rd_burst <= rd_burst_en;
      end
    end 
    
@@ -517,6 +519,9 @@ always @ ( posedge clk ) begin : proc_out
    dram_dq_out   <= sr_data[7:0];
    dram_rwds_out <= ~ byte_wr_en;// Note: rwds is a mask, 1==Don't Write Byte
    cs_l_reg    <= ~ cs_loc;
+
+   dram_dq_oe_l <= dram_dq_oe;
+   dram_rwds_oe_l <= dram_rwds_oe;
 
    if ( reset == 1 ) begin
      cs_l_reg <= 1;

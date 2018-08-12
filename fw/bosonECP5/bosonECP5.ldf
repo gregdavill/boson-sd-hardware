@@ -99,9 +99,6 @@
         <Source name="source/picosoc_ram_wb.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/hyper_xface.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
         <Source name="source/wbgpio.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
@@ -199,6 +196,12 @@
             <Options/>
         </Source>
         <Source name="source/wbuart/rxuartlite.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/hyperram/hyper_xface.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/hyperram/wb_hyper.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">
