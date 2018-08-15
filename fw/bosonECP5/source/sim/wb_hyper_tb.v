@@ -10,10 +10,16 @@ module top;
    localparam dw = 32;
 
    reg	   wb_clk = 1'b1;
+   reg     wb_clk90 = 1'b1;
+
    reg	   wb_rst = 1'b1;
 
-   always #5 wb_clk <= ~wb_clk;
+   always #6 wb_clk <= ~wb_clk;
    initial  #500 wb_rst <= 0;
+
+	always @(posedge wb_clk or negedge wb_clk)
+		#3 wb_clk90 <= wb_clk;
+
 
 	reg done = 0;
 
@@ -91,21 +97,17 @@ wb_bfm_master #(
 
 		repeat (2) @(posedge wb_clk);
 
-		//bfm_cfg.write(4'h0,8'h04,4'hF, err);
-		//bfm_cfg.write(4'h4,8'h0a,4'hF, err);	
-		//bfm_cfg.write(4'h8,32'h8fe4_0000,4'hF, err);
-
-		#10
+		bfm_cfg.write(4'h0,8'h04,4'hF, err);
+		bfm_cfg.write(4'h4,8'h0a,4'hF, err);	
+		bfm_cfg.write(4'h8,32'h8fe4_0000,4'hF, err);
+		
+		#1000
 		//bfm_cfg.read(4'h0,data, err);
 		//bfm_cfg.read(4'h4,data, err);
 		//bfm_cfg.read(4'h8,data, err);
 
-		bfm.write(32'h0000_0000, 32'h5555_5555, 4'hF, err);	
-		
-		#200
-		bfm.write(32'h0000_0004, 32'h5555_5555, 4'hF, err);	
-		bfm.write(32'h0000_0008, 32'h5555_5555, 4'hF, err);	
-		
+		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
+		#100
 		bfm.read(32'h0000_0000, data, err);	
 		#1000
 
@@ -118,7 +120,7 @@ wb_bfm_master #(
 	
 		bfm.write_burst(0,0,4'hF, 3'b010, 2'b00, 4, err);
 
-	    #1000
+	    #10
 
 		bfm.read_burst_comp(0,0,4'hF, 3'b010, 2'b00, 4, err);
 		
@@ -165,6 +167,8 @@ wb_bfm_master #(
 	wb_hyper uut(
 	.wb_clk_i(wb_clk),
 	.wb_rst_i(wb_rst),
+
+	.clk90 (wb_clk90),
 
 	/* wishbone slave #1 */
 	.wb_dat_i(wb_s1_dat_o),

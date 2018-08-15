@@ -656,6 +656,7 @@ wb_intercon wb_intercon0
 
 
 wire hb_clk_o;
+wire hb_clk_n_o;
 wire hb_cs_o;
 wire hb_rwds_o;
 wire hb_rwds_i;
@@ -668,6 +669,7 @@ wire hb_rst_o;
 	wb_hyper wb_hyper (
 	.wb_clk_i     (wb_clk),
 	.wb_rst_i     (wb_rst),
+	.clk90        (clk_90),
 	.wb_dat_i     (wb_m2s_hram0_dat),
 	.wb_adr_i     (wb_m2s_hram0_adr[23:0]),
 	.wb_sel_i     (wb_m2s_hram0_sel),
@@ -686,6 +688,7 @@ wire hb_rst_o;
 	.wb_cfg_stb_i (wb_m2s_hram0_cfg_stb),
 	.wb_cfg_ack_o (wb_s2m_hram0_cfg_ack),
 	.hb_clk_o     (hb_clk_o            ),
+	.hb_clk_n_o     (hb_clk_n_o            ),
 	.hb_cs_o      (hb_cs_o             ),
 	.hb_rwds_o    (hb_rwds_o           ),
 	.hb_rwds_i    (hb_rwds_i           ),
@@ -713,10 +716,15 @@ wire hb_rst_o;
 		.O(hb_rwds_i)
 	);
 
-	OB hr_ck_b [1:0] (
-		.O(HRAM_CK),
-		.I({!hb_clk_o,hb_clk_o})
+	OB hr_ck_a (
+		.O(HRAM_CK[1]),
+		.I(hb_clk_o)
 	);
+	OB hr_ck_b (
+		.O(HRAM_CK[0]),
+		.I(hb_clk_n_o)
+	);
+	
 
 	OB hr_res_b (
 		.O(HRAM_RESET),
