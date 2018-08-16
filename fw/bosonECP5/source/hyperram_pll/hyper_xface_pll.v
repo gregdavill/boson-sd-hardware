@@ -734,14 +734,14 @@ ecp_oddr u1_xil_oddr
 (
   .clk       ( dram_ck_loc         ),
   .din_ris   ( dram_ck_en          ),
-  .din_fal   ( 0                   ),
+  .din_fal   ( 1'b0                   ),
   .dout      ( dram_ck             )
 );
 ecp_oddr u2_xil_oddr
 (
   .clk       ( dram_ck_loc         ),
   .din_ris   ( ~dram_ck_en          ),
-  .din_fal   ( 0                   ),
+  .din_fal   ( 1'b0                   ),
   .dout      ( dram_ck_n             )
 );
 //assign #2 dram_ck_loc = clk;// Simulation Only - delay 10ns Sim clock by 2ns

@@ -3,17 +3,17 @@
 module wb_hyper (
 	input wire        wb_clk_i, 
 	input wire        wb_rst_i, 
-	input wire		 clk90,
+	input wire		  clk90,
 	// Wishbone Hyperbus Slave
 	input wire [31:0] wb_dat_i, 
-	output wire [31:0] wb_dat_o,
+	output reg [31:0] wb_dat_o,
 	input wire [31:0] wb_adr_i, 
 	input wire [3:0]  wb_sel_i,
 	input wire [2:0]  wb_cti_i, 
 	input wire        wb_we_i, 
 	input wire        wb_cyc_i, 
 	input wire        wb_stb_i, 
-	output wire        wb_ack_o,
+	output reg        wb_ack_o,
 	// Wishbone Cfg Slave
 	input wire [31:0]  wb_cfg_dat_i, 
 	output reg [31:0]  wb_cfg_dat_o,
@@ -28,10 +28,10 @@ module wb_hyper (
 	output wire        hb_clk_n_o,
 	output wire        hb_cs_o,
 	output wire        hb_rwds_o,
-	input wire        hb_rwds_i,
+	input  wire        hb_rwds_i,
 	output wire        hb_rwds_dir,
 	output wire [7:0]  hb_dq_o,
-	input wire [7:0]  hb_dq_i,
+	input  wire [7:0]  hb_dq_i,
 	output wire        hb_dq_dir,
 	output wire        hb_rst_o,
 	// Debug 
@@ -45,16 +45,14 @@ reg [7:0] hyperbus_latency_2x;
 reg [31:0] hyperbus_cfg_word;
 reg hyperbus_cfg_en;
 
-
-reg [1:0] stb_sr;
+reg [5:0] ack_count;
 
 reg rd_req;
-reg wr_req;
 
 reg wr_mem;
 
 reg [31:0] addr;
-wire [31:0] wr_d;
+reg [31:0] wr_d;
 wire [31:0] rd_d;
 
 wire [3:0] wr_byte_en;
@@ -67,15 +65,17 @@ wire read_valid;
 assign wr_byte_en = wb_sel_i;
 assign read_burst_en = (wb_cti_i == 3'b010) && wb_cyc_i;
 
-assign wb_ack_o = (next_burst_rdy | read_valid) && wb_cyc_i;
-assign wb_dat_o = rd_d;
+//assign wb_ack_o = (next_burst_rdy | read_valid) && wb_cyc_i;
+//assign wb_dat_o = rd_d;
 
 
 /* translate from wishbone to hyper_xface */
 always @(posedge wb_clk_i) begin
-	/* Generate a pulse from our stb */
-	stb_sr <= {stb_sr[0], wb_stb_i & wb_cyc_i & !busy & !wb_ack_o};
-	
+	/* Generate our first_byte signal */
+	if(wb_cyc_i == 0)
+		ack_count <= 0;
+	else if(wb_ack_o)
+		ack_count <= ack_count + 1;
 end
 
 /* wb_slave to handle config registers of hyperram */
@@ -128,11 +128,21 @@ reg [2:0] busy_sr;
 reg hyperbus_cfg_loc;
 reg [31:0] wb_cfg_dat_loc;
 
-assign wr_d = hyperbus_cfg_loc ? wb_cfg_dat_loc : wb_dat_i;
+
+always @(posedge wb_clk_i) begin
+ wb_ack_o <= ((next_burst_rdy && (wb_cti_i != 3'b000)) | read_valid | (ack_count == 0 && wb_write_req)) && wb_cyc_i && wb_stb_i;
+ wb_dat_o <= rd_d;
+end
+
+wire continue_burst;
+assign continue_burst = (wb_stb_i & wb_cyc_i & wb_we_i & (wb_cti_i != 3'b000));
+
+reg wr_req_r;
+wire wr_req = wr_req_r | (wb_ack_o && continue_burst);
 
 /* Handle different types of requests */ 
 always @(posedge wb_clk_i) begin
-  wr_req <= 1'b0;	 
+  wr_req_r <= 1'b0;	 
   rd_req <= 1'b0;
 
   ack_f <= wb_ack_o;
@@ -146,23 +156,22 @@ always @(posedge wb_clk_i) begin
 	  /* special address required for config writes */
 	  addr <= 32'h0000_0800;
 	  wr_mem <= 1'b1;
-	  wr_req <= 1'b1;	
-	 // wr_d <= hyperbus_cfg_word;
+	  wr_req_r <= 1'b1;	
+	  wr_d <= hyperbus_cfg_word;
 	end else if(wb_read_req) begin 
 	  addr <= wb_adr_i[23:2];
 	  wr_mem <= 1'b0;
 	  rd_req <= 1'b1;
 	end else if(wb_write_req) begin 
 	  addr <= wb_adr_i[23:2];
-	 // wr_d <= wb_dat_i;
+	  wr_d <= wb_dat_i;
 	  wr_mem <= 1'b0;
-	  wr_req <= 1'b1;
+	  wr_req_r <= 1'b1;
 	end
-  end else if(wb_ack_o && wb_stb_i & wb_cyc_i & wb_we_i & read_burst_en) begin
+  end else if(continue_burst && next_burst_rdy) begin
 	  addr <= wb_adr_i[23:2];
-	 
 	  wr_mem <= 1'b0;
-	  wr_req <= 1'b1;
+	  wr_d <= wb_dat_i;
 	end
 end
 

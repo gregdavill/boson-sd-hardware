@@ -120,7 +120,7 @@ wb_bfm_master #(
 	
 		bfm.write_burst(0,0,4'hF, 3'b010, 2'b00, 4, err);
 
-	    #10
+	    #100
 
 		bfm.read_burst_comp(0,0,4'hF, 3'b010, 2'b00, 4, err);
 		

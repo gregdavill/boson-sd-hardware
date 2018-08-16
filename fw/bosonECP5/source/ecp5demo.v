@@ -566,7 +566,6 @@ wb_intercon wb_intercon0
 	/*
 	* SD IO port
 	*/
-	/*
 	reg [3:0] dat_out_ff;
 	always @(negedge sd_clk_pad_o)
 		dat_out_ff <= sd_dat_out;
@@ -591,7 +590,7 @@ wb_intercon wb_intercon0
 		.O(SDMMC_CK),
 		.I(sd_clk_pad_o)
 	);
-	*/
+	
 
 
 	
@@ -669,7 +668,7 @@ wire hb_rst_o;
 	wb_hyper wb_hyper (
 	.wb_clk_i     (wb_clk),
 	.wb_rst_i     (wb_rst),
-	.clk90        (clk_90),
+	//.clk90        (clk_90),
 	.wb_dat_i     (wb_m2s_hram0_dat),
 	.wb_adr_i     (wb_m2s_hram0_adr[23:0]),
 	.wb_sel_i     (wb_m2s_hram0_sel),
@@ -688,7 +687,7 @@ wire hb_rst_o;
 	.wb_cfg_stb_i (wb_m2s_hram0_cfg_stb),
 	.wb_cfg_ack_o (wb_s2m_hram0_cfg_ack),
 	.hb_clk_o     (hb_clk_o            ),
-	.hb_clk_n_o     (hb_clk_n_o            ),
+	//.hb_clk_n_o   (hb_clk_n_o            ),
 	.hb_cs_o      (hb_cs_o             ),
 	.hb_rwds_o    (hb_rwds_o           ),
 	.hb_rwds_i    (hb_rwds_i           ),
@@ -717,12 +716,12 @@ wire hb_rst_o;
 	);
 
 	OB hr_ck_a (
-		.O(HRAM_CK[1]),
+		.O(HRAM_CK[0]),
 		.I(hb_clk_o)
 	);
 	OB hr_ck_b (
-		.O(HRAM_CK[0]),
-		.I(hb_clk_n_o)
+		.O(HRAM_CK[1]),
+		.I(!hb_clk_o)
 	);
 	
 
@@ -867,20 +866,7 @@ wire hb_rst_o;
 		.cmos_reset_o  (cmos_reset_out)
     );
 	
-	
-	OB sdmmc_ck_buf_0 (
-		.O(SDMMC_CK),
-		.I(wb_clk)
-	);
-	OB sdmmc_ck_buf_1 (
-		.O(SDMMC_CMD),
-		.I(wb_m2s_picorv32_cyc)
-	);
-	OB sdmmc_ck_buf_2 (
-		.O(SDMMC_DATA[0]),
-		.I(wb_s2m_picorv32_err)
-	);
-	
+
 	
 `ifdef SUMP2
 
