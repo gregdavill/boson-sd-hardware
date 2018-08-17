@@ -212,7 +212,7 @@ cc_controller_wb cc_controller_wb0(
 		//Stream interface
 		.stream_s_clk_i  (cmos_clk_i),
 		.stream_s_data_i ({16'b0,cmos_data_i}),
-		.stream_s_valid_i(cmos_valid_i),
+		.stream_s_valid_i(cc_data_valid),
 		.stream_s_ready_o(stream_s_ready_o),
 		.irq_o			 (),
 		//Configuration interface

@@ -112,7 +112,7 @@ module wb_stream_reader
       .buf_size  (buf_size),
       .burst_size (burst_size));
 
-/*
+
    stream_dual_clock_fifo
      #(.DW (WB_DW),
        .AW (FIFO_AW))
@@ -130,22 +130,7 @@ module wb_stream_reader
     .stream_m_data_o  (fifo_dout),
     .stream_m_valid_o (fifo_valid),
     .stream_m_ready_i (fifo_rd)
-   );*/
+   );
    
-   
-   wb_stream_writer_fifo
-     #(.DW (WB_DW),
-       .AW (FIFO_AW))
-   fifo
-   (.clk   (clk),
-    .rst   (rst),
-
-    .stream_s_data_i  (stream_s_data_i),
-    .stream_s_valid_i (stream_s_valid_i),
-    .stream_s_ready_o (stream_s_ready_o),
-
-    .stream_m_data_o  (fifo_dout),
-    .stream_m_valid_o (fifo_valid),
-    .stream_m_ready_i (fifo_rd));
-
+ 
 endmodule
