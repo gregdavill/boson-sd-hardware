@@ -168,7 +168,7 @@
         <Source name="source/wb_streamer/wb_stream_reader_ctrl.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog">
+        <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
         <Source name="source/wb_streamer/dual_clock_fifo.v" type="Verilog" type_short="Verilog">
@@ -202,6 +202,18 @@
             <Options/>
         </Source>
         <Source name="source/hyperram/wb_hyper.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/hyperram_pll/wb_hyper_pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="source/hyperram_pll/ecp5_oddrx1f.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="source/hyperram_pll/ecp5_iddrx1f.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="source/hyperram_pll/hyper_xface_pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
         <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">

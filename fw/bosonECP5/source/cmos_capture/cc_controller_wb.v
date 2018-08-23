@@ -102,7 +102,7 @@ byte_en_reg #(32) dma_addr_r(wb_clk_i, wb_rst_i, we && wb_adr_i == `ccc_dst_src_
 
 always @(posedge wb_clk_i or posedge wb_rst_i)
 begin
-    if (wb_rst_i)begin
+    if (wb_rst_i) begin
         wb_ack_o <= 0;
 		arm_start <= 0;
     end
@@ -121,10 +121,10 @@ begin
 end
 
 
-always @(posedge wb_clk_i or posedge wb_rst_i)begin
-    if (wb_rst_i == 1)
+always @(posedge wb_clk_i or posedge wb_rst_i) begin
+    if (wb_rst_i == 1) begin
         wb_dat_o <= 0;
-    else
+	end else begin
         if (wb_stb_i & wb_cyc_i) begin //CS
             case (wb_adr_i)
                 `ccc_data_count: wb_dat_o <= data_count_reg;
@@ -132,6 +132,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)begin
                 `ccc_dst_src_addr: wb_dat_o <= dma_addr_reg;
             endcase
         end
+	end
 end
 
 endmodule

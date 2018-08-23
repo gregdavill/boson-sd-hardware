@@ -41,7 +41,10 @@ module ecp5demo (
 	output wire led,
 
 	output wire flash_csb,
-	//output flash_clk, /* CLK pin requires special USRMCLK module */
+`ifdef SIM
+	output  trap,
+	output  flash_clk, /* CLK pin requires special USRMCLK module */
+`endif
 	inout  wire flash_io0,
 	inout  wire flash_io1,
 	inout  wire flash_io2,
@@ -72,18 +75,25 @@ module ecp5demo (
 
 	wire clk,clk_90,pll_lock;
 	
-	//assign clk = clk_input;
 	/* Feed the PLL to generate a 48MHZ sys clk */
+`ifdef SIM	
+	assign clk = clk_input;
+`else
 	mainPLL _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
-
+`endif
 	
+
+`ifdef SIM
+	reg [1:0] reset_cnt = 0;
+`else
 	reg [13:0] reset_cnt = 0;
+`endif
 	wire resetn = &reset_cnt;
 
 	always @(posedge clk) begin
 		reset_cnt <= reset_cnt + !resetn;
 	end
-	
+
 	assign BOSON_RESET = 1'b1;
 
 	wire wb_clk = clk;
@@ -457,7 +467,10 @@ wb_intercon wb_intercon0
 	wire flash_clk;
 
 	/* Flash IO buffers */
+`ifdef SIM
+`else
 	USRMCLK u1 (.USRMCLKI(flash_clk), .USRMCLKTS(!resetn)) /* synthesis syn_noprune=1 */;
+`endif
 	BBPU flash_io_buf[3:0] (
 		.B({flash_io3, flash_io2, flash_io1, flash_io0}),
 		.T({!flash_io3_oe,!flash_io2_oe,!flash_io1_oe, !flash_io0_oe}),
@@ -614,7 +627,7 @@ wb_intercon wb_intercon0
 		uart0_stb_sr[1:0] <= {uart0_stb_sr[0],wb_m2s_uart0_stb};
 
 	wbuart #(
-    .INITIAL_SETUP(416),
+    .INITIAL_SETUP(208),
 	.HARDWARE_FLOW_CONTROL_PRESENT(0)
 	) uart0(
 		.i_clk(wb_clk),
@@ -670,7 +683,7 @@ wire hb_rst_o;
 	.wb_rst_i     (wb_rst),
 	//.clk90        (clk_90),
 	.wb_dat_i     (wb_m2s_hram0_dat),
-	.wb_adr_i     (wb_m2s_hram0_adr[23:0]),
+	.wb_adr_i     ({8'b0,wb_m2s_hram0_adr[23:0]}),
 	.wb_sel_i     (wb_m2s_hram0_sel),
 	.wb_cti_i     (wb_m2s_hram0_cti),
 	.wb_we_i      (wb_m2s_hram0_we),
@@ -680,7 +693,7 @@ wire hb_rst_o;
 	.wb_ack_o     (wb_s2m_hram0_ack),
 	.wb_cfg_dat_i (wb_m2s_hram0_cfg_dat),
 	.wb_cfg_dat_o (wb_s2m_hram0_cfg_dat),
-	.wb_cfg_adr_i (wb_m2s_hram0_cfg_adr[7:0]),
+	.wb_cfg_adr_i ({24'b0,wb_m2s_hram0_cfg_adr[7:0]}),
 	.wb_cfg_sel_i (wb_m2s_hram0_cfg_sel),
 	.wb_cfg_we_i  (wb_m2s_hram0_cfg_we),
 	.wb_cfg_cyc_i (wb_m2s_hram0_cfg_cyc),

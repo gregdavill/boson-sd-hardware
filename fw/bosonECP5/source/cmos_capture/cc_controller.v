@@ -142,7 +142,7 @@ output wire [7:0] dbg_out;
 
 //wb accessible registers
 wire [31:0] dma_addr_reg;
-wire [31:0] status_reg;
+wire [31:0] status_reg = 0;
 wire [31:0] data_count_reg;
 wire [31:0] data_count_reg_wb;
 
