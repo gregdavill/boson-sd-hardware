@@ -2,7 +2,7 @@
 <BaliProject version="3.2" title="bosonECP5" device="LFE5U-25F-6MG285C" default_implementation="impl1">
     <Options/>
     <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="Strategy1">
-        <Options def_top="rxuart" top="ecp5demo"/>
+        <Options def_top="rxuartlite" top="ecp5demo"/>
         <Source name="source/ecp5demo.v" type="Verilog" type_short="Verilog">
             <Options top_module="ecp5demo"/>
         </Source>
@@ -12,7 +12,10 @@
         <Source name="source/picorv32.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/pll.v" type="Verilog" type_short="Verilog">
+        <Source name="source/pll_test.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
         <Source name="source/arbiter/arbiter.v" type="Verilog" type_short="Verilog">
@@ -168,10 +171,10 @@
         <Source name="source/wb_streamer/wb_stream_reader_ctrl.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/wb_streamer/dual_clock_fifo.v" type="Verilog" type_short="Verilog">
+        <Source name="source/wb_streamer/dual_clock_fifo.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
         <Source name="source/wb_streamer/stream_dual_clock_fifo.v" type="Verilog" type_short="Verilog">
@@ -214,6 +217,9 @@
             <Options/>
         </Source>
         <Source name="source/hyperram_pll/hyper_xface_pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+            <Options/>
+        </Source>
+        <Source name="source/wb_streamer/fifo_ram.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">

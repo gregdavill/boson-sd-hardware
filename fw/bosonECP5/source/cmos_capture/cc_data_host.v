@@ -28,13 +28,13 @@ parameter PASS       = 6'b000100;
 
 
 /* Vsync Detect will generate a 1 cycle pulse ever line */
-reg [1:0] vsync_sr;
+reg vsync_sr;
 always @(posedge cmos_clk_i) 
 //	vsync_sr[1:0] <= {vsync_sr[0], cmos_hsync_i};
-	vsync_sr[1:0] <= {vsync_sr[0], cmos_vsync_i};
+	vsync_sr <= cmos_vsync_i;
 
 wire vsync_detect;
-assign vsync_detect = (vsync_sr == 2'b10);
+assign vsync_detect = ({vsync_sr,cmos_vsync_i} == 2'b01);
 
 /* Mask data based on state machine */
 assign cmos_en_o   = (state == PASS) ? cmos_valid_i : 1'b0;

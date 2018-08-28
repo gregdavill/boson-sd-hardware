@@ -59,9 +59,6 @@ module cc_controller_wb(
            wb_cyc_i, 
            wb_stb_i, 
            wb_ack_o,
-           data_count_reg,
-           status_reg,
-           dma_addr_reg,
 		   arm_bit
        );
 
@@ -80,11 +77,8 @@ input wire wb_cyc_i;     // WISHBONE cycle input
 input wire wb_stb_i;     // WISHBONE strobe input
 output reg wb_ack_o;     // WISHBONE acknowledge output
 //Buss accessible registers
-input wire [31:0] data_count_reg;
-input wire [31:0] status_reg;
 
 //Register Controll
-output wire [31:0] dma_addr_reg;
 output wire arm_bit;
 
 wire we;
@@ -97,10 +91,8 @@ assign arm_bit = (arm_sr == 2'b01);
 
 assign we = (wb_we_i && ((wb_stb_i && wb_cyc_i) || wb_ack_o)) ? 1'b1 : 1'b0;
 
-byte_en_reg #(32) dma_addr_r(wb_clk_i, wb_rst_i, we && wb_adr_i == `ccc_dst_src_addr, wb_sel_i[3:0], wb_dat_i, dma_addr_reg);
 
-
-always @(posedge wb_clk_i or posedge wb_rst_i)
+always @(posedge wb_clk_i)
 begin
     if (wb_rst_i) begin
         wb_ack_o <= 0;
@@ -108,30 +100,25 @@ begin
     end
     else
     begin
+		wb_ack_o <= 0;
 		arm_start <= 0;
-        if ((wb_stb_i & wb_cyc_i) || wb_ack_o)begin
+        if (wb_stb_i & wb_cyc_i)begin
             if (wb_we_i) begin
                 case (wb_adr_i)
-                  `ccc_status: arm_start <= wb_dat_i[0];    
+                  4: arm_start <= wb_dat_i[0];    
                 endcase
             end
-            wb_ack_o <= wb_cyc_i & wb_stb_i & ~wb_ack_o;
+            wb_ack_o <= ~wb_ack_o;
         end
     end
 end
 
 
-always @(posedge wb_clk_i or posedge wb_rst_i) begin
+always @(posedge wb_clk_i) begin
     if (wb_rst_i == 1) begin
         wb_dat_o <= 0;
 	end else begin
-        if (wb_stb_i & wb_cyc_i) begin //CS
-            case (wb_adr_i)
-                `ccc_data_count: wb_dat_o <= data_count_reg;
-                `ccc_status:     wb_dat_o <= status_reg;
-                `ccc_dst_src_addr: wb_dat_o <= dma_addr_reg;
-            endcase
-        end
+		wb_dat_o <= 0;
 	end
 end
 

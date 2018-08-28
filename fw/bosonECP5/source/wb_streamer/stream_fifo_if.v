@@ -2,16 +2,16 @@
 //Modified by Olof Kindgren to provide streaming interface
 module stream_fifo_if
   #(parameter DW = 0)
-   (input 		clk,
-    input 		rst,
+   (input 	wire	clk,
+    input 	wire	rst,
     //FIFO Interface    
-    input [DW-1:0] 	fifo_data_i,
-    output 		fifo_rd_en_o,
-    input 		fifo_empty_i,
+    input wire [DW-1:0] 	fifo_data_i,
+    output 	wire 	fifo_rd_en_o,
+    input wire		fifo_empty_i,
     //Stream Interface
     output reg [DW-1:0] stream_m_data_o,
     output reg 		stream_m_valid_o,
-    input 		stream_m_ready_i);
+    input wire		stream_m_ready_i);
     
    reg 		    fifo_valid, middle_valid;
    reg [DW-1:0]     middle_dout;

@@ -155,10 +155,11 @@ wire cc_start;
 
 wire stream_s_ready_o;
 
+wire wb_rst_cmos_o;
 
 cc_data_host cc_data_host0 (
 	.cmos_clk_i     (cmos_clk_i),
-    .rst            (wb_rst_i),
+    .rst            (wb_rst_cmos_o),
     .cmos_data_i    (cmos_data_i),
 	.cmos_hsync_i   (cmos_hsync_i),
 	.cmos_vsync_i   (cmos_vsync_i),
@@ -167,8 +168,7 @@ cc_data_host cc_data_host0 (
 	/* Data ready to be read */
 	.cmos_en_o      (cc_data_valid),
 	/* Control Signals */
-	.arm			(arm_bit_cmos),
-	.data_count_reg (data_count_reg)
+	.arm			(arm_bit_cmos)
 );
 
 cc_controller_wb cc_controller_wb0(
@@ -182,9 +182,6 @@ cc_controller_wb cc_controller_wb0(
     .wb_stb_i                       (wb_stb_i),
     .wb_cyc_i                       (wb_cyc_i),
     .wb_ack_o                       (wb_ack_o),
-    .data_count_reg                 (data_count_reg_wb),
-    .status_reg                     (status_reg),
-    .dma_addr_reg                   (dma_addr_reg),
 	.arm_bit                        (arm_bit_wb)
     );
 
@@ -193,7 +190,7 @@ cc_controller_wb cc_controller_wb0(
 	wb_stream_reader #(
 		.WB_DW(32),
 		.WB_AW(32),
-		.FIFO_AW(5) 
+		.FIFO_AW(9) 
 		) cmos_streamer (
 		.clk			 (wb_clk_i),
 		.rst			 (wb_rst_i),
@@ -212,7 +209,7 @@ cc_controller_wb cc_controller_wb0(
 		//Stream interface
 		.stream_s_clk_i  (cmos_clk_i),
 		.stream_s_data_i ({16'b0,cmos_data_i}),
-		.stream_s_valid_i(cc_data_valid),
+		.stream_s_valid_i(cmos_valid_i),
 		.stream_s_ready_o(stream_s_ready_o),
 		.irq_o			 (),
 		//Configuration interface
@@ -232,8 +229,10 @@ cc_controller_wb cc_controller_wb0(
 /* Control signals crossing into CMOS_CLK */
 monostable_domain_cross arm_bit_cross(wb_rst_i, wb_clk_i, arm_bit_wb, cmos_clk_i, arm_bit_cmos);
 
+bistable_domain_cross #(1) rst_bit_cross(wb_rst_i, wb_clk_i, wb_rst_i, cmos_clk_i, wb_rst_cmos_o);
 
-bistable_domain_cross #(32) data_count_reg_cross(wb_rst_i, cmos_clk_i, data_count_reg, wb_clk_i, data_count_reg_wb);
+
+//bistable_domain_cross #(32) data_count_reg_cross(wb_rst_i, cmos_clk_i, data_count_reg, wb_clk_i, data_count_reg_wb);
 
 
 

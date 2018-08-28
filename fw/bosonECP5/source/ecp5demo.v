@@ -34,7 +34,7 @@ module ecp5demo (
 	input wire clk_input,
 
 	output wire ser_tx,
-	input wire ser_rx,
+	output wire ser_rx,
 	output wire ser_tx_dir,
 	output wire ser_rx_dir,
 
@@ -75,18 +75,19 @@ module ecp5demo (
 
 	wire clk,clk_90,pll_lock;
 	
-	/* Feed the PLL to generate a 48MHZ sys clk */
+	/* Feed the PLL to generate a 12MHZ sys clk */
 `ifdef SIM	
 	assign clk = clk_input;
 `else
-	mainPLL _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
+     pll _inst (.CLKI(clk_input), .CLKOS2(clk), .CLKOS3(clk_90), .LOCK(pll_lock));
+	//mainPLL _inst (.CLKI(clk_input), .CLKOP(clk_90), .CLKOS(clk), .LOCK(pll_lock));
 `endif
 	
 
 `ifdef SIM
 	reg [1:0] reset_cnt = 0;
 `else
-	reg [13:0] reset_cnt = 0;
+	reg [15:0] reset_cnt = 0;
 `endif
 	wire resetn = &reset_cnt;
 
@@ -94,7 +95,7 @@ module ecp5demo (
 		reset_cnt <= reset_cnt + !resetn;
 	end
 
-	assign BOSON_RESET = 1'b1;
+	assign BOSON_RESET = 1'b0;
 
 	wire wb_clk = clk;
 	wire wb_rst = !resetn;
@@ -270,8 +271,9 @@ wire        wb_s2m_hram0_ack;
 wire        wb_s2m_hram0_err;
 wire        wb_s2m_hram0_rty;
 
+
 wb_intercon wb_intercon0
-   (.wb_clk_i                   (wb_clk),
+(.wb_clk_i                   (wb_clk),
     .wb_rst_i                   (wb_rst),
     .wb_picorv32_adr_i          (wb_m2s_picorv32_adr),
     .wb_picorv32_dat_i          (wb_m2s_picorv32_dat),
@@ -444,8 +446,6 @@ wb_intercon wb_intercon0
 
 
 
-
-
 	assign wb_s2m_ram0_err = 1'b0;
 	assign wb_s2m_ram0_rty = 1'b0;
 	assign wb_s2m_flash0_err = 1'b0;
@@ -466,10 +466,13 @@ wb_intercon wb_intercon0
 	wire flash_io3_oe, flash_io3_do, flash_io3_di;
 	wire flash_clk;
 
+
+    assign ser_tx = |wb_m2s_picorv32_adr;
+	assign ser_rx = wb_m2s_ccc_master_cyc;
 	/* Flash IO buffers */
 `ifdef SIM
 `else
-	USRMCLK u1 (.USRMCLKI(flash_clk), .USRMCLKTS(!resetn)) /* synthesis syn_noprune=1 */;
+	USRMCLK u1 (.USRMCLKI(flash_clk), .USRMCLKTS(flash_csb)) /* synthesis syn_noprune=1 */;
 `endif
 	BBPU flash_io_buf[3:0] (
 		.B({flash_io3, flash_io2, flash_io1, flash_io0}),
@@ -509,7 +512,7 @@ wb_intercon wb_intercon0
 	assign led = gpio_reg[0];
 	
 	assign ser_tx_dir = 1;
-	assign ser_rx_dir = 0;
+	assign ser_rx_dir = 1;
 	
 	
 	/* RISCV CPU */
@@ -616,8 +619,8 @@ wb_intercon wb_intercon0
 	/* Disconnect the UART */
 	assign uart0_rx = uart1_tx;
 `else
-	assign uart0_rx = ser_rx;
-	assign ser_tx = uart0_tx;
+	//assign uart0_rx = ser_rx;
+	//assign ser_tx = uart0_tx;
 	
 `endif
 
@@ -649,7 +652,7 @@ wb_intercon wb_intercon0
 	
 	wbuart uart1(
 		.i_clk(wb_clk),
-		.i_rst(1'b1),
+		.i_rst(wb_rst),
 		//
 		.i_wb_cyc (wb_m2s_uart1_cyc),
 		.i_wb_stb (wb_m2s_uart1_stb && wb_m2s_uart0_cyc), 
@@ -711,7 +714,7 @@ wire hb_rst_o;
 	.hb_rst_o     (hb_rst_o            )
 );
 
-
+	assign hb_clk_n_o = !hb_clk_o;
 
 
 	BBPU hr_dq_b[7:0] (
@@ -734,7 +737,7 @@ wire hb_rst_o;
 	);
 	OB hr_ck_b (
 		.O(HRAM_CK[1]),
-		.I(!hb_clk_o)
+		.I(hb_clk_n_o)
 	);
 	
 
@@ -805,6 +808,7 @@ wire hb_rst_o;
 	 /*
 	  * 
 	  */
+	  
 	sdc_controller sd_controller_top_0
 	(
 		.wb_clk_i      (wb_clk                     ),
@@ -839,8 +843,40 @@ wire hb_rst_o;
 	);
 	 
 	 
+	 
+	 picosoc_ram_wb #(
+		.MEM_WORDS(2048)
+	) ram1 (
+		.wb_clk_i(wb_clk),
+	    .wb_rst_i(wb_rst),
+		.wb_dat_i      (wb_m2s_ccc_slave_dat       ),
+		.wb_dat_o      (wb_s2m_ccc_slave_dat       ),
+		.wb_adr_i      (wb_m2s_ccc_slave_adr[7:0]  ),
+		.wb_sel_i      (wb_m2s_ccc_slave_sel       ),
+		.wb_we_i       (wb_m2s_ccc_slave_we        ),
+		.wb_stb_i      (wb_m2s_ccc_slave_stb       ),
+		.wb_cyc_i      (wb_m2s_ccc_slave_cyc       ),
+		.wb_ack_o      (wb_s2m_ccc_slave_ack       )
+	);
 	
-	cc_controller cc_controller_top0(
+		 picosoc_ram_wb #(
+		.MEM_WORDS(2048)
+	) ram2 (
+		.wb_clk_i(wb_clk),
+	    .wb_rst_i(wb_rst),
+
+		.wb_dat_i      (wb_m2s_wb_streamer_slave_dat       ),
+		.wb_dat_o      (wb_s2m_wb_streamer_slave_dat       ),
+		.wb_adr_i      (wb_m2s_wb_streamer_slave_adr[7:0]  ),
+		.wb_sel_i      (wb_m2s_wb_streamer_slave_sel       ),
+		.wb_we_i       (wb_m2s_wb_streamer_slave_we        ),
+		.wb_stb_i      (wb_m2s_wb_streamer_slave_stb       ),
+		.wb_cyc_i      (wb_m2s_wb_streamer_slave_cyc       ),
+		.wb_ack_o      (wb_s2m_wb_streamer_slave_ack       )
+	);
+	
+	/*
+	cc_controller cc_controller_top0( 
         .wb_clk_i      (wb_clk                     ),
 		.wb_rst_i      (wb_rst                     ),
 		.wb_dat_i      (wb_m2s_ccc_slave_dat       ),
@@ -877,8 +913,8 @@ wire hb_rst_o;
 		.cmos_hsync_i  (cmos_hsync_in),
 		.cmos_valid_i  (cmos_valid_in),
 		.cmos_reset_o  (cmos_reset_out)
-    );
-	
+    ); /* synthesis syn_noprune=1 */
+
 
 	
 `ifdef SUMP2

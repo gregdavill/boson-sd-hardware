@@ -40,8 +40,7 @@ module wb_stream_reader
 
    //FIFO interface
    wire [WB_DW-1:0] 	 fifo_dout;
-   //wire [FIFO_AW:0] 	 fifo_cnt;
-   wire fifo_valid;
+   wire [FIFO_AW:0] 	 fifo_cnt;
    wire 		 fifo_rd;
 
    //Configuration parameters
@@ -75,7 +74,7 @@ module wb_stream_reader
       .wbm_err_i (wbm_err_i),
       //FIFO interface
       .fifo_d   (fifo_dout),
-      .fifo_valid (fifo_valid),
+      .fifo_cnt (fifo_cnt),
       .fifo_rd  (fifo_rd),
       //Configuration interface
       .busy       (busy),
@@ -112,7 +111,7 @@ module wb_stream_reader
       .buf_size  (buf_size),
       .burst_size (burst_size));
 
-
+/*
    stream_dual_clock_fifo
      #(.DW (WB_DW),
        .AW (FIFO_AW))
@@ -131,6 +130,24 @@ module wb_stream_reader
     .stream_m_valid_o (fifo_valid),
     .stream_m_ready_i (fifo_rd)
    );
+   */
+   
+   wb_stream_writer_fifo
+     #(.DW (WB_DW),
+       .AW (FIFO_AW))
+   fifo
+   (.clk   (clk),
+    .rst   (rst),
+
+    .stream_s_data_i  (stream_s_data_i),
+    .stream_s_valid_i (stream_s_valid_i),
+    .stream_s_ready_o (stream_s_ready_o),
+
+    .stream_m_data_o  (fifo_dout),
+    .stream_m_valid_o (),
+    .stream_m_ready_i (fifo_rd),
+
+.cnt (fifo_cnt));
    
  
 endmodule

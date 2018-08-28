@@ -28,15 +28,16 @@ module wb_stream_reader_cfg
    output reg [WB_AW-1:0] burst_size);
 
    reg                    busy_r;
-   always @(posedge wb_clk_i)
+   always @(posedge wb_clk_i) begin
      if (wb_rst_i)
        busy_r <= 0;
      else
        busy_r <= busy;
+	end
 
 
 
-always @(posedge wb_clk_i or posedge wb_rst_i)
+always @(posedge wb_clk_i)
 begin
     if (wb_rst_i)begin
         wb_ack_o <= 0;
@@ -47,13 +48,16 @@ begin
         burst_size <= 2; 
 		
 		irq        <= 0;
+		
+		wb_dat_o <= 0;
     end
     else
     begin
 		if (!busy & busy_r)
 			irq <= 1;
-			
-        if ((wb_stb_i & wb_cyc_i) || wb_ack_o)begin
+		wb_ack_o <= 0;
+		
+        if (wb_stb_i & wb_cyc_i)begin
             if (wb_we_i) begin
                 case (wb_adr_i[4:2])
 						//Read/Write logic
@@ -64,31 +68,22 @@ begin
 				1 : start_adr <= wb_dat_i;
 				2 : buf_size  <= wb_dat_i;
 				3 : burst_size <= wb_dat_i;
-				default : ;
 				endcase
+			end else begin
+				case (wb_adr_i[4:2])
+					0: wb_dat_o <= {{(WB_DW-2){1'b0}}, irq, busy};
+					1: wb_dat_o <= start_adr;
+					2: wb_dat_o <= buf_size;
+					3: wb_dat_o <= burst_size;
+					4: wb_dat_o <= tx_cnt*4;	
+				endcase	
 			end
-            wb_ack_o <= wb_cyc_i & wb_stb_i & ~wb_ack_o;
+            wb_ack_o <= ~wb_ack_o;
         end
     end
 end
 
 
-	always @(posedge wb_clk_i or posedge wb_rst_i)begin
-		if (wb_rst_i == 1)
-			wb_dat_o <= 0;
-		else begin
-			if (wb_stb_i & wb_cyc_i) begin //CS
-				case (wb_adr_i[4:2])
-					0: wb_dat_o <= {{(WB_DW-2){1'b0}}, irq, busy};
-					1:     wb_dat_o <= start_adr;
-					2: wb_dat_o <= buf_size;
-					3: wb_dat_o <= burst_size;
-					4: wb_dat_o <= tx_cnt*4;
-					
-				endcase
-			end
-		end
-	end
 
 
    assign wb_err_o = 0;
