@@ -2781,6 +2781,8 @@ module picorv32_wb #(
 	output reg wbm_stb_o,
 	input wbm_ack_i,
 	output reg wbm_cyc_o,
+	
+	output pico_dbg,
 
 	// Pico Co-Processor Interface (PCPI)
 	output        pcpi_valid,

@@ -11,15 +11,18 @@ module picosoc_ram_wb #(
     input          wb_stb_i,
     input  [3:0]   wb_sel_i,
     input          wb_we_i,
-    output  [31:0] wb_dat_o,
+    output wire [31:0] wb_dat_o,
     output wire    wb_ack_o
     
 	);
 	
 	reg ack_o;
-	
+	wire [31:0] dat_o;
+
 	assign wb_ack_o = ack_o;
-	
+	assign wb_dat_o = wb_cyc_i ? dat_o : 32'b0;
+
+
 	always @(posedge wb_clk_i)
 		ack_o <= wb_stb_i && wb_cyc_i && ~ack_o; 
 	
@@ -28,7 +31,7 @@ module picosoc_ram_wb #(
 		.wen((wb_cyc_i && wb_we_i) ? wb_sel_i : 4'b0),
 		.addr(wb_cyc_i ? wb_adr_i[23:2] : 22'b0),
 		.wdata(wb_dat_i),
-		.rdata(wb_dat_o)
+		.rdata(dat_o)
 	);
 	
 endmodule

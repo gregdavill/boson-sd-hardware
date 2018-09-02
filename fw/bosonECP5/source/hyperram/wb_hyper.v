@@ -131,7 +131,7 @@ always @(posedge wb_clk_i) begin
   rd_req <= 1'b0;
 
   ack_f <= wb_ack_o;
-
+	addr <= wb_adr_i[23:2];
   if(!busy) begin
   	if(hyperbus_cfg_en) begin
 	  /* special address required for config writes */

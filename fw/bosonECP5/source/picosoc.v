@@ -45,7 +45,7 @@ module picosoc (
 	
 	output trap
 );
-	parameter integer MEM_WORDS = 2048;
+	parameter integer MEM_WORDS = 4096;
 	parameter [31:0] STACKADDR = (4*MEM_WORDS);       // end of memory
 	parameter [31:0] PROGADDR_RESET = 32'h 0009_0000; // 1 MB into flash
 
@@ -68,12 +68,14 @@ module picosoc (
 		.STACKADDR(STACKADDR),
 		.PROGADDR_RESET(PROGADDR_RESET),
 		.PROGADDR_IRQ(32'h 0000_0000),
-		.BARREL_SHIFTER(1),
+		.BARREL_SHIFTER(0),
 		.COMPRESSED_ISA(1),
-		.ENABLE_MUL(1),
-		.ENABLE_DIV(1),
+		.ENABLE_MUL(0),
+		.ENABLE_DIV(0),
 		.ENABLE_IRQ(1),
-		.ENABLE_IRQ_QREGS(0)
+		.ENABLE_IRQ_QREGS(0),
+		.TWO_CYCLE_ALU(1),
+		.TWO_CYCLE_COMPARE(1)
 	) cpu (
 		.trap        (trap       ),
 	
@@ -129,6 +131,14 @@ module picosoc_mem #(
 	output reg [31:0] rdata
 );
 	reg [31:0] mem [0:WORDS-1];
+
+`ifdef SIM
+	integer i;
+	initial begin
+		for( i = 0; i < WORDS; i = i + 1)
+		mem[i] <= 0;
+	end
+`endif
 
 	always @(posedge clk) begin
 		rdata <= mem[addr];

@@ -75,7 +75,7 @@ module wb_arbiter
 ///////////////////////////////////////////////////////////////////////////////
 
    //Use parameter instead of localparam to work around a bug in Xilinx ISE
-   parameter master_sel_bits = num_masters > 1 ? $clog2(num_masters) : 1;
+   localparam master_sel_bits = num_masters > 1 ? $clog2(num_masters) : 1;
 
    wire [num_masters-1:0]     grant;
    wire [master_sel_bits-1:0] master_sel_in;
@@ -92,7 +92,7 @@ module wb_arbiter
       .select (master_sel_in),
       .active (active));
 
-   assign master_sel = active ? master_sel_in : 1;
+   assign master_sel = active ? master_sel_in : 0;
 
    //Mux active master
    assign wbs_adr_o = wbm_adr_i[master_sel*aw+:aw];

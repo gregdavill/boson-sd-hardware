@@ -1,30 +1,30 @@
 module stream_dual_clock_fifo
   #(parameter DW = 0,
     parameter AW = 0)
-   (input wire           wr_clk,
-    input wire           wr_rst,
-    input wire [DW-1:0]  stream_s_data_i, 
-    input wire           stream_s_valid_i,
-    output wire          stream_s_ready_o,
+   (input 	    wr_clk,
+    input 	    wr_rst,
+    input [DW-1:0]  stream_s_data_i, 
+    input 	    stream_s_valid_i,
+    output 	    stream_s_ready_o,
 
-    input wire           rd_clk,
-    input wire          rd_rst,
-    output wire [DW-1:0] stream_m_data_o,
-    output  wire        stream_m_valid_o,
-    input   wire         stream_m_ready_i);
+    input 	    rd_clk,
+    input 	    rd_rst,
+    output [DW-1:0] stream_m_data_o,
+    output 	    stream_m_valid_o,
+    input 	    stream_m_ready_i);
    
    
 
-   wire             fifo_rd_en;
+   wire 	    fifo_rd_en;
    wire [DW-1:0]    fifo_dout;
-   wire             fifo_empty;
-   wire             full;
+   wire 	    fifo_empty;
+   wire 	    full;
    
    assign stream_s_ready_o = !(full | wr_rst);
    
-  /*      
+	
    // orig_fifo is just a normal (non-FWFT) synchronous or asynchronous FIFO
-   dual_clock_fifo
+  /* dual_clock_fifo
      #(.ADDR_WIDTH (AW),
        .DATA_WIDTH (DW))
    dual_clock_fifo
@@ -39,21 +39,20 @@ module stream_dual_clock_fifo
       .rd_en_i   (fifo_rd_en),
       .rd_data_o (fifo_dout),
       .empty_o   (fifo_empty));
-*/
-   fifo_ram
-   dual_clock_fifo
-     (.Reset  (wr_rst),       
-      .WrClock  (wr_clk),
-      .WrEn   (stream_s_valid_i & stream_s_ready_o),
-      .Data (stream_s_data_i),
-      .Full    (full),
-
-      .RPReset  (rd_rst),       
-      .RdClock  (rd_clk),
-      .RdEn   (fifo_rd_en),
-      .Q (fifo_dout),
-      .Empty   (fifo_empty));
-
+	  */
+	  
+	cd_fifo_dc dual_clock_fifo (
+	.Data( stream_s_data_i ), 
+	.WrClock( wr_clk), 
+	.RdClock( rd_clk), 
+	.WrEn(  stream_s_valid_i & stream_s_ready_o), 
+	.RdEn( fifo_rd_en), 
+    .Reset(wr_rst ), 
+	.RPReset( rd_rst), 
+	.Q( fifo_dout), 
+	.Empty( fifo_empty), 
+	.Full(full ));
+	
 
    stream_fifo_if
      #(.DW (DW))
@@ -68,5 +67,3 @@ module stream_dual_clock_fifo
     .stream_m_ready_i (stream_m_ready_i));
    
 endmodule
-
-

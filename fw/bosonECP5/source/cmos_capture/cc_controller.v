@@ -156,7 +156,7 @@ wire cc_start;
 wire stream_s_ready_o;
 
 wire wb_rst_cmos_o;
-
+/*
 cc_data_host cc_data_host0 (
 	.cmos_clk_i     (cmos_clk_i),
     .rst            (wb_rst_cmos_o),
@@ -166,10 +166,10 @@ cc_data_host cc_data_host0 (
 	.cmos_valid_i   (cmos_valid_i),
 	.cmos_reset_o   (cmos_reset_o),
 	/* Data ready to be read */
-	.cmos_en_o      (cc_data_valid),
+	//.cmos_en_o      (cc_data_valid),
 	/* Control Signals */
-	.arm			(arm_bit_cmos)
-);
+	//.arm			(arm_bit_cmos)
+/*);
 
 cc_controller_wb cc_controller_wb0(
     .wb_clk_i                       (wb_clk_i),
@@ -185,7 +185,7 @@ cc_controller_wb cc_controller_wb0(
 	.arm_bit                        (arm_bit_wb)
     );
 
-
+*/
 
 	wb_stream_reader #(
 		.WB_DW(32),
@@ -207,7 +207,6 @@ cc_controller_wb cc_controller_wb0(
 		.wbm_ack_i		 (m_wb_ack_i),
 		//.wbm_err_i		 (m_wb_err_i),
 		//Stream interface
-		.stream_s_clk_i  (cmos_clk_i),
 		.stream_s_data_i ({16'b0,cmos_data_i}),
 		.stream_s_valid_i(cmos_valid_i),
 		.stream_s_ready_o(stream_s_ready_o),
