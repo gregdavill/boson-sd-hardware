@@ -1,44 +1,25 @@
 
-`timescale 1 us/1 us
-`default_nettype none
+`timescale 1 ns/1 ns
+`default_nettype wire
 
 module top;
 
 
-   vlog_tb_utils vlog_tb_utils0();
-   vlog_tap_generator #("wb_hyper.tap", 1) vtg();
+   //vlog_tb_utils vlog_tb_utils0();
+   //vlog_tap_generator #("wb_hyper.tap", 1) vtg();
 
    reg	   wb_clk = 1'b1;
    reg     wb_clk90 = 1'b1;
 
    reg	   wb_rst = 1'b1;
 
-   always #6 wb_clk <= ~wb_clk;
+   always #10 wb_clk <= ~wb_clk;
    initial  #500 wb_rst <= 0;
 
 	always @(posedge wb_clk or negedge wb_clk)
-		#3 wb_clk90 <= wb_clk;
-
-	reg done = 0;
-	wire trap;
+		#5 wb_clk90 <= wb_clk;
 
 
-	
-
-
-	always @(posedge done) begin
-      vtg.ok("All tests complete");
-      $display("All tests complete");
-      $finish;
-   end
-
-
-
-
-	always @(posedge wb_clk) begin
-		if(trap)
-			done <= 1;
-	end
 
 `define SIM
 
@@ -60,20 +41,33 @@ spiflash flash (
 );
 
 
+wire [15:0] cmos_dq;
+wire cmos_clk;
+wire cmos_vsync;
+wire cmos_hsync;
+wire cmos_valid;
+
+bosonCamera cam (
+	.reset(0),
+	.CMOS_DQ   (cmos_dq   ),
+	.CMOS_CLK  (cmos_clk  ),
+	.CMOS_VSYNC(cmos_vsync),
+	.CMOS_HSYNC(cmos_hsync),
+	.CMOS_VALID(cmos_valid)
+);
+
  ecp5demo dut (
 	.clk_input(wb_clk),
 
 	.ser_tx(),
-	.ser_rx(),
+	.ser_rx(1'b1),
 	.ser_tx_dir(),
 	.ser_rx_dir(),
 
-	.led(),
-
-	.trap(trap),
+	.led(clk),
 
 	.flash_csb(csb),
-	.flash_clk(clk), /* CLK pin requires special USRMCLK module */
+	//.flash_clk(clk), /* CLK pin requires special USRMCLK module */
 	.flash_io0(io0),
 	.flash_io1(io1),
 	.flash_io2(io2),
@@ -94,17 +88,17 @@ spiflash flash (
 	.SDMMC_CK(),
 
 	/* 16bit CMOS Camera interface */
-	.BOSON_DATA(),
-	.BOSON_CLK  (),
+	.BOSON_DATA(cmos_dq),
+	.BOSON_CLK  (cmos_clk),
 	.BOSON_VSYNC(),
 	.BOSON_HSYNC(),
-	.BOSON_VALID(),
+	.BOSON_VALID(cmos_valid),
 	.BOSON_RESET()
 );
 
 endmodule
 
-
+/*
 module IB (
 	input wire I,
 	output wire O
@@ -136,3 +130,4 @@ module BBPU (
 	assign O = B;
 
 endmodule
+*/

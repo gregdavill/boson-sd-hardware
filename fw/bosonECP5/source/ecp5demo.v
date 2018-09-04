@@ -33,8 +33,8 @@
 module ecp5demo (
 	input wire clk_input,
 
-	inout wire ser_tx,
-	inout wire ser_rx,
+	output wire ser_tx,
+	input wire ser_rx,
 	output wire ser_tx_dir,
 	output wire ser_rx_dir, 
 
@@ -45,6 +45,7 @@ module ecp5demo (
 	output  trap,
 	output  flash_clk, /* CLK pin requires special USRMCLK module */
 `endif
+	
 	inout  wire flash_io0,
 	inout  wire flash_io1,
 	inout  wire flash_io2,
@@ -81,8 +82,10 @@ module ecp5demo (
 `else
     //OSC_TOP osc(clk);
 	wire clk_tmp;
-	pll _inst (.CLKI(clk_input), .CLKOP(clk_tmp), .CLKOS(clk_90), .LOCK(pll_lock));
 	
+	//assign clk = clk_input;
+	pll _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
+	/*
 	DCSC DCSInst0 (
 		.CLK0(clk_tmp),
 		.CLK1(clk_tmp),
@@ -92,21 +95,23 @@ module ecp5demo (
 		.DCSOUT(clk)
 	);
 	defparam DCSInst0.DCSMODE = "POS";
-	
+	*/
 	//pll _inst (.CLKI(clk_input), .CLKOS2(clk), .CLKOS3(clk_90), .LOCK(pll_lock));
 	//mainPLL _inst (.CLKI(clk_input), .CLKOP(clk_90), .CLKOS(clk), .LOCK(pll_lock));
 `endif
 	
 
 `ifdef SIM
-	reg [1:0] reset_cnt = 0;
+	reg [2:0] reset_cnt = 0;
+	wire resetn = reset_cnt[2];
 `else
 	reg [21:0] reset_cnt = 0;
-`endif
 	wire resetn = reset_cnt[21];
+`endif
 
 	always @(posedge clk_input) begin
-		reset_cnt <= reset_cnt + !resetn;
+		if(pll_lock)
+			reset_cnt <= reset_cnt + !resetn;
 	end
 
 	assign BOSON_RESET = 1'b1;
@@ -198,9 +203,6 @@ module ecp5demo (
 	
 
 	wire [15:0] gpio_reg;
-
-
-	wire [15:0] stream_16_data;
 	
 	wire card_detect;
 	IBPU sdmmc_cd_buf (
@@ -227,8 +229,9 @@ module ecp5demo (
 	//wire trap;
 	//assign led = trap;
 	assign fpga_reset = 1'b1;
-	assign led = wb_m2s_picorv32_cyc;
-	//assign led = gpio_reg[0];
+	//assign led = wb_m2s_picorv32_cyc;
+	assign led = gpio_reg[0];
+	//assign led = flash_clk;
 	
 	assign ser_tx_dir = 1;
 	assign ser_rx_dir = 0;
@@ -303,10 +306,9 @@ module ecp5demo (
 
 
 	
-	wire uart0_rx,uart0_tx;
-	wire uart1_rx,uart1_tx;
-
-	assign uart1_rx = 1;
+	wire uart0_rx;
+	wire uart0_tx;
+	
 
 	assign uart0_rx = ser_rx;
 	assign ser_tx = uart0_tx;
@@ -315,17 +317,16 @@ module ecp5demo (
 	reg [1:0] uart0_stb_sr;
 	wire uart0_stb = (uart0_stb_sr == 2'b01);
 	always @(posedge wb_clk)
-		uart0_stb_sr[1:0] <= {uart0_stb_sr[0],wb_m2s_uart0_stb};
+		uart0_stb_sr[1:0] <= {uart0_stb_sr[0],wb_m2s_uart0_stb & wb_m2s_uart0_cyc};
 
 	wbuart #(
-    .INITIAL_SETUP(208),
-	.HARDWARE_FLOW_CONTROL_PRESENT(0)
+    .INITIAL_SETUP(416)
 	) uart0(
 		.i_clk(wb_clk),
 		.i_rst(wb_rst),
 		//
 		.i_wb_cyc (wb_m2s_uart0_cyc),
-		.i_wb_stb (uart0_stb && wb_m2s_uart0_cyc), 
+		.i_wb_stb (uart0_stb), 
 		.i_wb_we  (wb_m2s_uart0_we), 
 		.i_wb_addr(wb_m2s_uart0_adr[3:2]), 
 		.i_wb_data(wb_m2s_uart0_dat),
@@ -333,7 +334,9 @@ module ecp5demo (
 		.o_wb_data(wb_s2m_uart0_dat),
 		//
 		.i_uart_rx(uart0_rx), 
-		.o_uart_tx(uart0_tx)
+		.o_uart_tx(uart0_tx),
+		/* Don't use hardware flow control tie cts HIGH */
+		.i_cts_n(1'b1) 
 	);
 
 
@@ -515,15 +518,58 @@ wire hb_rst_o;
 	 
 	 
 	
+	/* TODO Stream FlowControl module: 
+	
+		Tasks:
+			Monitor Camera clk freq (freq capture)
+			Monitor V-sync, clocks between pulses. (PWM capture?)
+			Monitor H-Sync, clocks between pulses. (PWM capture?)
+			Monitor Data EN, Total bits per frame,
+			
+			Count total frames.
 
+		Syncronised V-sync.
 	
+		jk, set/reset to capture a total frame.
+		 - CPU set register, monitor while frame capture is active.
+		 - Module resets flag when frame is captured to RAM.
+	
+	*/
+	
+
+
+	wire cmos_enable_mask;
+	wire streamer_irq;
+
+	wb_cc_cfg wb_cc_cfg0
+	(
+		.wb_clk_i(wb_clk),
+		.wb_rst_i(wb_rst),
+		.wb_adr_i(wb_m2s_cc_cfg_adr[4:0]),
+		.wb_dat_i(wb_m2s_cc_cfg_dat),
+		.wb_sel_i(wb_m2s_cc_cfg_sel),
+		.wb_we_i (wb_m2s_cc_cfg_we),
+		.wb_cyc_i(wb_m2s_cc_cfg_cyc),
+		.wb_stb_i(wb_m2s_cc_cfg_stb),
+		.wb_cti_i(wb_m2s_cc_cfg_cti),
+		.wb_bte_i(wb_m2s_cc_cfg_bte),
+		.wb_dat_o(wb_s2m_cc_cfg_dat),
+		.wb_ack_o(wb_s2m_cc_cfg_ack),
+		.wb_err_o(wb_s2m_cc_cfg_err),
+		.frame_start(!cmos_vsync_in),
+		.capture_done(streamer_irq),
+		.enable(cmos_enable_mask)
+	);
 	
 	
 	
 
 
-	wire stream_up_valid;
+	wire stream_up_valid,stream_up_ready;
 	wire [31:0] stream_up_data;
+	
+	wire stream_wb_valid,stream_wb_ready;
+	wire [31:0] stream_wb_data;
 
 
 	stream_upsizer #(
@@ -539,17 +585,30 @@ wire hb_rst_o;
 
 		.m_data_o (stream_up_data),
 		.m_valid_o(stream_up_valid),
-		.m_ready_i(1'b1)
+		.m_ready_i(stream_up_ready)
 	);
 	
 	
-	reg [31:0] data_ff;
-	reg valid_ff;
-	always @(posedge cmos_clk_in) begin
-			data_ff <= stream_up_data;
-			valid_ff <= stream_up_valid;
-	end
+	stream_dual_clock_fifo #(
+	 .DW(32),
+	 .AW(10)
+	 ) stream_fifo_dc (
+		.wr_clk(cmos_clk_in),
+		.wr_rst(wb_rst),
+		
+		.stream_s_data_i(stream_up_data),
+		.stream_s_valid_i(stream_up_valid & cmos_enable_mask),
+		.stream_s_ready_o(stream_up_ready),
+		
+		.rd_clk(wb_clk),
+		.rd_rst(wb_rst),
+		
+		.stream_m_data_o(stream_wb_data),
+		.stream_m_valid_o(stream_wb_valid),
+		.stream_m_ready_i(stream_wb_ready)
+	 );
 	
+
 
 
 	wb_stream_reader #( 
@@ -572,10 +631,10 @@ wire hb_rst_o;
 		.wbm_ack_i		 (wb_s2m_streamer_master_ack),
 		.wbm_err_i		 (1'b0),
 		//Stream interface
-		.stream_data (data_ff),
-		.stream_valid(valid_ff),
-		.stream_clk  (cmos_clk_in),
-		.irq_o			 (),
+		.stream_s_data_i (stream_wb_data),
+		.stream_s_valid_i(stream_wb_valid),
+		.stream_s_ready_o(stream_wb_ready),
+		.irq_o			 (streamer_irq),
 		//Configuration interface
 		.wbs_adr_i		 ( wb_m2s_streamer_adr[4:0]),
 		.wbs_dat_i		 ( wb_m2s_streamer_dat     ),

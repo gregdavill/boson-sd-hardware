@@ -4,7 +4,7 @@ module wb_stream_writer_fifo
     parameter AW = 0)
    (input wire 	    clk,
     input wire	      rst,
-    output wire [AW:0] cnt,
+    output reg [AW:0] cnt,
     input wire [DW-1:0]    stream_s_data_i, 
     input wire 	      stream_s_valid_i,
     output wire	      stream_s_ready_o,
@@ -20,13 +20,13 @@ module wb_stream_writer_fifo
    wire 	    fifo_empty;
    wire 	    full;
    
- //  wire  		    inc_cnt;
- //  wire  		    dec_cnt;
+   wire  		    inc_cnt;
+   wire  		    dec_cnt;
 
    assign stream_s_ready_o = !full;
    
    // orig_fifo is just a normal (non-FWFT) synchronous or asynchronous FIFO
- /*  fifo
+   fifo
      #(.DEPTH_WIDTH (AW),
        .DATA_WIDTH  (DW))
    fifo0
@@ -39,8 +39,8 @@ module wb_stream_writer_fifo
        .wr_en_i   (stream_s_valid_i & ~full),
        .wr_data_i (stream_s_data_i),
        .full_o    (full));
-*/
 
+/*
 cd_fifo  fifo0
      (
        .Clock  (clk),
@@ -52,7 +52,7 @@ cd_fifo  fifo0
        .Q      (fifo_dout),
        .Full   (full),
 	   .WCNT   (cnt));
-
+*/
 
 
    stream_fifo_if
@@ -66,8 +66,8 @@ cd_fifo  fifo0
     .stream_m_data_o  (stream_m_data_o),
     .stream_m_valid_o (stream_m_valid_o),
     .stream_m_ready_i (stream_m_ready_i));
-/*
-   
+
+
    assign inc_cnt = stream_s_valid_i & stream_s_ready_o;
    assign dec_cnt = stream_m_valid_o & stream_m_ready_i;
    always @(posedge clk) begin
@@ -80,6 +80,6 @@ cd_fifo  fifo0
       if (rst)
 	cnt <= 0;
    end
-   */
+   
    
 endmodule

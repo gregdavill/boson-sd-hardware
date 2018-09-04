@@ -24,6 +24,7 @@ module pll (CLKI, CLKOP, CLKOS, CLKOS2, CLKOS3, LOCK)/* synthesis NGD_DRC_MASK=1
     wire scuba_vlo;
 
     //IB Inst1_IB (.I(CLKI), .O(buf_CLKI))
+	assign buf_CLKI = CLKI;
              /* synthesis IO_TYPE="LVCMOS18" */;
 
     VHI scuba_vhi_inst (.Z(scuba_vhi));

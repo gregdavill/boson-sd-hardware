@@ -132,6 +132,18 @@ wire [31:0] wb_s2m_streamer_dat;
 wire        wb_s2m_streamer_ack;
 wire        wb_s2m_streamer_err;
 wire        wb_s2m_streamer_rty;
+wire [31:0] wb_m2s_cc_cfg_adr;
+wire [31:0] wb_m2s_cc_cfg_dat;
+wire  [3:0] wb_m2s_cc_cfg_sel;
+wire        wb_m2s_cc_cfg_we;
+wire        wb_m2s_cc_cfg_cyc;
+wire        wb_m2s_cc_cfg_stb;
+wire  [2:0] wb_m2s_cc_cfg_cti;
+wire  [1:0] wb_m2s_cc_cfg_bte;
+wire [31:0] wb_s2m_cc_cfg_dat;
+wire        wb_s2m_cc_cfg_ack;
+wire        wb_s2m_cc_cfg_err;
+wire        wb_s2m_cc_cfg_rty;
 wire [31:0] wb_m2s_hram0_cfg_adr;
 wire [31:0] wb_m2s_hram0_cfg_dat;
 wire  [3:0] wb_m2s_hram0_cfg_sel;
@@ -292,6 +304,18 @@ wb_intercon wb_intercon0
     .wb_streamer_ack_i        (wb_s2m_streamer_ack),
     .wb_streamer_err_i        (wb_s2m_streamer_err),
     .wb_streamer_rty_i        (wb_s2m_streamer_rty),
+    .wb_cc_cfg_adr_o          (wb_m2s_cc_cfg_adr),
+    .wb_cc_cfg_dat_o          (wb_m2s_cc_cfg_dat),
+    .wb_cc_cfg_sel_o          (wb_m2s_cc_cfg_sel),
+    .wb_cc_cfg_we_o           (wb_m2s_cc_cfg_we),
+    .wb_cc_cfg_cyc_o          (wb_m2s_cc_cfg_cyc),
+    .wb_cc_cfg_stb_o          (wb_m2s_cc_cfg_stb),
+    .wb_cc_cfg_cti_o          (wb_m2s_cc_cfg_cti),
+    .wb_cc_cfg_bte_o          (wb_m2s_cc_cfg_bte),
+    .wb_cc_cfg_dat_i          (wb_s2m_cc_cfg_dat),
+    .wb_cc_cfg_ack_i          (wb_s2m_cc_cfg_ack),
+    .wb_cc_cfg_err_i          (wb_s2m_cc_cfg_err),
+    .wb_cc_cfg_rty_i          (wb_s2m_cc_cfg_rty),
     .wb_hram0_cfg_adr_o       (wb_m2s_hram0_cfg_adr),
     .wb_hram0_cfg_dat_o       (wb_m2s_hram0_cfg_dat),
     .wb_hram0_cfg_sel_o       (wb_m2s_hram0_cfg_sel),

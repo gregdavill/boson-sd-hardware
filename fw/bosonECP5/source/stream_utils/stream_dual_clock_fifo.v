@@ -24,7 +24,7 @@ module stream_dual_clock_fifo
    
 	
    // orig_fifo is just a normal (non-FWFT) synchronous or asynchronous FIFO
-  /* dual_clock_fifo
+   dual_clock_fifo
      #(.ADDR_WIDTH (AW),
        .DATA_WIDTH (DW))
    dual_clock_fifo
@@ -39,20 +39,7 @@ module stream_dual_clock_fifo
       .rd_en_i   (fifo_rd_en),
       .rd_data_o (fifo_dout),
       .empty_o   (fifo_empty));
-	  */
-	  
-	cd_fifo_dc dual_clock_fifo (
-	.Data( stream_s_data_i ), 
-	.WrClock( wr_clk), 
-	.RdClock( rd_clk), 
-	.WrEn(  stream_s_valid_i & stream_s_ready_o), 
-	.RdEn( fifo_rd_en), 
-    .Reset(wr_rst ), 
-	.RPReset( rd_rst), 
-	.Q( fifo_dout), 
-	.Empty( fifo_empty), 
-	.Full(full ));
-	
+
 
    stream_fifo_if
      #(.DW (DW))

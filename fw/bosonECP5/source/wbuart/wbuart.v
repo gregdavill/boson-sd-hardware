@@ -45,6 +45,7 @@
 `define	UART_RXREG	2'b10
 `define	UART_TXREG	2'b11
 
+`define USE_LITE_UART
 
 module	wbuart(i_clk, i_rst,
 		//
@@ -101,6 +102,7 @@ module	wbuart(i_clk, i_rst,
 	initial	uart_setup = INITIAL_SETUP
 		| ((HARDWARE_FLOW_CONTROL_PRESENT==1'b0)? 31'h40000000 : 0);
 	always @(posedge i_clk)
+		begin
 		// Under wishbone rules, a write takes place any time i_wb_stb
 		// is high.  If that's the case, and if the write was to the
 		// setup address, then set us up for the new parameters.
@@ -109,6 +111,7 @@ module	wbuart(i_clk, i_rst,
 				(i_wb_data[30])
 					||(!HARDWARE_FLOW_CONTROL_PRESENT),
 				i_wb_data[29:0] };
+		end
 
 	/////////////////////////////////////////
 	//

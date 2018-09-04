@@ -70,8 +70,8 @@ module wb_stream_reader_cfg
 	 wb_ack_o   <= 0;
 	 enable     <= 1'b0;
 	 start_adr  <= 0; 
-	 buf_size   <= 1280;
-	 burst_size <= 8;
+	 buf_size   <= 0;
+	 burst_size <= 0;
 	 irq <= 0;
       end
    end

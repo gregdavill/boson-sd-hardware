@@ -17,13 +17,11 @@ module wb_stream_reader
     input [WB_DW-1:0]    wbm_dat_i,
     input                wbm_ack_i,
     input                wbm_err_i,
-    
-   //FIFO interface
-   input wire [WB_DW-1:0] 	 stream_data,
-   input wire 	             stream_valid,
-   input wire 		 	     stream_clk,
-   
-	output               irq_o,
+    //Stream interface
+    input [WB_DW-1:0]    stream_s_data_i,
+    input                stream_s_valid_i,
+    output               stream_s_ready_o,
+    output               irq_o,
     //Configuration interface
     input [4:0]          wbs_adr_i,
     input [WB_DW-1:0]    wbs_dat_i,
@@ -37,6 +35,10 @@ module wb_stream_reader
     output               wbs_ack_o,
     output               wbs_err_o);
 
+   //FIFO interface
+   wire [WB_DW-1:0] 	 fifo_dout;
+   wire [FIFO_AW:0] 	 fifo_cnt;
+   wire 		 fifo_rd;
 
    //Configuration parameters
    wire 		 enable;
@@ -68,9 +70,9 @@ module wb_stream_reader
       .wbm_ack_i (wbm_ack_i),
       .wbm_err_i (wbm_err_i),
       //FIFO interface
-      .fifo_data   (stream_data),
-      .fifo_valid (stream_valid),
-      .fifo_clk  (stream_clk),
+      .fifo_d   (fifo_dout),
+      .fifo_cnt (fifo_cnt),
+      .fifo_rd  (fifo_rd),
       //Configuration interface
       .busy       (busy),
       .enable     (enable),
@@ -105,7 +107,7 @@ module wb_stream_reader
       .start_adr (start_adr),
       .buf_size  (buf_size),
       .burst_size (burst_size));
-/*
+
    wb_stream_writer_fifo
      #(.DW (WB_DW),
        .AW (FIFO_AW))
@@ -122,5 +124,5 @@ module wb_stream_reader
     .stream_m_ready_i (fifo_rd),
 
     .cnt   (fifo_cnt));
-*/
+
 endmodule

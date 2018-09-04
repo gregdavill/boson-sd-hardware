@@ -135,6 +135,18 @@ module wb_intercon
     input         wb_streamer_ack_i,
     input         wb_streamer_err_i,
     input         wb_streamer_rty_i,
+    output [31:0] wb_cc_cfg_adr_o,
+    output [31:0] wb_cc_cfg_dat_o,
+    output  [3:0] wb_cc_cfg_sel_o,
+    output        wb_cc_cfg_we_o,
+    output        wb_cc_cfg_cyc_o,
+    output        wb_cc_cfg_stb_o,
+    output  [2:0] wb_cc_cfg_cti_o,
+    output  [1:0] wb_cc_cfg_bte_o,
+    input  [31:0] wb_cc_cfg_dat_i,
+    input         wb_cc_cfg_ack_i,
+    input         wb_cc_cfg_err_i,
+    input         wb_cc_cfg_rty_i,
     output [31:0] wb_hram0_cfg_adr_o,
     output [31:0] wb_hram0_cfg_dat_o,
     output  [3:0] wb_hram0_cfg_sel_o,
@@ -222,9 +234,9 @@ wire        wb_s2m_sdc_master_ram0_err;
 wire        wb_s2m_sdc_master_ram0_rty;
 
 wb_mux
-  #(.num_slaves (8),
-    .MATCH_ADDR ({32'h00080000, 32'h00000000, 32'h04000000, 32'h02000000, 32'h02000200, 32'h02001100, 32'h02001000, 32'h02100000}),
-    .MATCH_MASK ({32'hfff80000, 32'hffffc000, 32'hffe00000, 32'hffffff00, 32'hffffff00, 32'hffffff00, 32'hffffff00, 32'hffffff00}))
+  #(.num_slaves (9),
+    .MATCH_ADDR ({32'h00080000, 32'h00000000, 32'h04000000, 32'h02000000, 32'h02000200, 32'h02001100, 32'h02002000, 32'h02100000, 32'h02002100}),
+    .MATCH_MASK ({32'hfff80000, 32'hffffc000, 32'hffe00000, 32'hffffff00, 32'hffffff00, 32'hffffff00, 32'hffffff00, 32'hffffff00, 32'hffffff00}))
  wb_mux_picorv32
    (.wb_clk_i  (wb_clk_i),
     .wb_rst_i  (wb_rst_i),
@@ -240,18 +252,18 @@ wb_mux
     .wbm_ack_o (wb_picorv32_ack_o),
     .wbm_err_o (wb_picorv32_err_o),
     .wbm_rty_o (wb_picorv32_rty_o),
-    .wbs_adr_o ({wb_flash0_adr_o, wb_m2s_picorv32_ram0_adr, wb_m2s_picorv32_hram0_adr, wb_spi_conf_adr_o, wb_gpio0_adr_o, wb_uart0_adr_o, wb_streamer_adr_o, wb_sdc_slave_adr_o}),
-    .wbs_dat_o ({wb_flash0_dat_o, wb_m2s_picorv32_ram0_dat, wb_m2s_picorv32_hram0_dat, wb_spi_conf_dat_o, wb_gpio0_dat_o, wb_uart0_dat_o, wb_streamer_dat_o, wb_sdc_slave_dat_o}),
-    .wbs_sel_o ({wb_flash0_sel_o, wb_m2s_picorv32_ram0_sel, wb_m2s_picorv32_hram0_sel, wb_spi_conf_sel_o, wb_gpio0_sel_o, wb_uart0_sel_o, wb_streamer_sel_o, wb_sdc_slave_sel_o}),
-    .wbs_we_o  ({wb_flash0_we_o, wb_m2s_picorv32_ram0_we, wb_m2s_picorv32_hram0_we, wb_spi_conf_we_o, wb_gpio0_we_o, wb_uart0_we_o, wb_streamer_we_o, wb_sdc_slave_we_o}),
-    .wbs_cyc_o ({wb_flash0_cyc_o, wb_m2s_picorv32_ram0_cyc, wb_m2s_picorv32_hram0_cyc, wb_spi_conf_cyc_o, wb_gpio0_cyc_o, wb_uart0_cyc_o, wb_streamer_cyc_o, wb_sdc_slave_cyc_o}),
-    .wbs_stb_o ({wb_flash0_stb_o, wb_m2s_picorv32_ram0_stb, wb_m2s_picorv32_hram0_stb, wb_spi_conf_stb_o, wb_gpio0_stb_o, wb_uart0_stb_o, wb_streamer_stb_o, wb_sdc_slave_stb_o}),
-    .wbs_cti_o ({wb_flash0_cti_o, wb_m2s_picorv32_ram0_cti, wb_m2s_picorv32_hram0_cti, wb_spi_conf_cti_o, wb_gpio0_cti_o, wb_uart0_cti_o, wb_streamer_cti_o, wb_sdc_slave_cti_o}),
-    .wbs_bte_o ({wb_flash0_bte_o, wb_m2s_picorv32_ram0_bte, wb_m2s_picorv32_hram0_bte, wb_spi_conf_bte_o, wb_gpio0_bte_o, wb_uart0_bte_o, wb_streamer_bte_o, wb_sdc_slave_bte_o}),
-    .wbs_dat_i ({wb_flash0_dat_i, wb_s2m_picorv32_ram0_dat, wb_s2m_picorv32_hram0_dat, wb_spi_conf_dat_i, wb_gpio0_dat_i, wb_uart0_dat_i, wb_streamer_dat_i, wb_sdc_slave_dat_i}),
-    .wbs_ack_i ({wb_flash0_ack_i, wb_s2m_picorv32_ram0_ack, wb_s2m_picorv32_hram0_ack, wb_spi_conf_ack_i, wb_gpio0_ack_i, wb_uart0_ack_i, wb_streamer_ack_i, wb_sdc_slave_ack_i}),
-    .wbs_err_i ({wb_flash0_err_i, wb_s2m_picorv32_ram0_err, wb_s2m_picorv32_hram0_err, wb_spi_conf_err_i, wb_gpio0_err_i, wb_uart0_err_i, wb_streamer_err_i, wb_sdc_slave_err_i}),
-    .wbs_rty_i ({wb_flash0_rty_i, wb_s2m_picorv32_ram0_rty, wb_s2m_picorv32_hram0_rty, wb_spi_conf_rty_i, wb_gpio0_rty_i, wb_uart0_rty_i, wb_streamer_rty_i, wb_sdc_slave_rty_i}));
+    .wbs_adr_o ({wb_flash0_adr_o, wb_m2s_picorv32_ram0_adr, wb_m2s_picorv32_hram0_adr, wb_spi_conf_adr_o, wb_gpio0_adr_o, wb_uart0_adr_o, wb_streamer_adr_o, wb_sdc_slave_adr_o, wb_cc_cfg_adr_o}),
+    .wbs_dat_o ({wb_flash0_dat_o, wb_m2s_picorv32_ram0_dat, wb_m2s_picorv32_hram0_dat, wb_spi_conf_dat_o, wb_gpio0_dat_o, wb_uart0_dat_o, wb_streamer_dat_o, wb_sdc_slave_dat_o, wb_cc_cfg_dat_o}),
+    .wbs_sel_o ({wb_flash0_sel_o, wb_m2s_picorv32_ram0_sel, wb_m2s_picorv32_hram0_sel, wb_spi_conf_sel_o, wb_gpio0_sel_o, wb_uart0_sel_o, wb_streamer_sel_o, wb_sdc_slave_sel_o, wb_cc_cfg_sel_o}),
+    .wbs_we_o  ({wb_flash0_we_o, wb_m2s_picorv32_ram0_we, wb_m2s_picorv32_hram0_we, wb_spi_conf_we_o, wb_gpio0_we_o, wb_uart0_we_o, wb_streamer_we_o, wb_sdc_slave_we_o, wb_cc_cfg_we_o}),
+    .wbs_cyc_o ({wb_flash0_cyc_o, wb_m2s_picorv32_ram0_cyc, wb_m2s_picorv32_hram0_cyc, wb_spi_conf_cyc_o, wb_gpio0_cyc_o, wb_uart0_cyc_o, wb_streamer_cyc_o, wb_sdc_slave_cyc_o, wb_cc_cfg_cyc_o}),
+    .wbs_stb_o ({wb_flash0_stb_o, wb_m2s_picorv32_ram0_stb, wb_m2s_picorv32_hram0_stb, wb_spi_conf_stb_o, wb_gpio0_stb_o, wb_uart0_stb_o, wb_streamer_stb_o, wb_sdc_slave_stb_o, wb_cc_cfg_stb_o}),
+    .wbs_cti_o ({wb_flash0_cti_o, wb_m2s_picorv32_ram0_cti, wb_m2s_picorv32_hram0_cti, wb_spi_conf_cti_o, wb_gpio0_cti_o, wb_uart0_cti_o, wb_streamer_cti_o, wb_sdc_slave_cti_o, wb_cc_cfg_cti_o}),
+    .wbs_bte_o ({wb_flash0_bte_o, wb_m2s_picorv32_ram0_bte, wb_m2s_picorv32_hram0_bte, wb_spi_conf_bte_o, wb_gpio0_bte_o, wb_uart0_bte_o, wb_streamer_bte_o, wb_sdc_slave_bte_o, wb_cc_cfg_bte_o}),
+    .wbs_dat_i ({wb_flash0_dat_i, wb_s2m_picorv32_ram0_dat, wb_s2m_picorv32_hram0_dat, wb_spi_conf_dat_i, wb_gpio0_dat_i, wb_uart0_dat_i, wb_streamer_dat_i, wb_sdc_slave_dat_i, wb_cc_cfg_dat_i}),
+    .wbs_ack_i ({wb_flash0_ack_i, wb_s2m_picorv32_ram0_ack, wb_s2m_picorv32_hram0_ack, wb_spi_conf_ack_i, wb_gpio0_ack_i, wb_uart0_ack_i, wb_streamer_ack_i, wb_sdc_slave_ack_i, wb_cc_cfg_ack_i}),
+    .wbs_err_i ({wb_flash0_err_i, wb_s2m_picorv32_ram0_err, wb_s2m_picorv32_hram0_err, wb_spi_conf_err_i, wb_gpio0_err_i, wb_uart0_err_i, wb_streamer_err_i, wb_sdc_slave_err_i, wb_cc_cfg_err_i}),
+    .wbs_rty_i ({wb_flash0_rty_i, wb_s2m_picorv32_ram0_rty, wb_s2m_picorv32_hram0_rty, wb_spi_conf_rty_i, wb_gpio0_rty_i, wb_uart0_rty_i, wb_streamer_rty_i, wb_sdc_slave_rty_i, wb_cc_cfg_rty_i}));
 
 wb_mux
   #(.num_slaves (2),

@@ -9,5 +9,5 @@ tb_pll:
 	vvp output/tb_pll.out +vcd
 
 full:
-	iverilog -g2001 -s top -o output/tb_full.out -I support/wb_common -I ../sdc_dma/verilog -I ../cmos_capture -f full_filelist.txt
+	iverilog -g2001 -s top -o output/tb_full.out -I support/wb_common -I .. -I ../sdc_dma/verilog -I ../cmos_capture -f full_filelist.txt
 	vvp output/tb_full.out +vcd +firmware=firmware.hex
