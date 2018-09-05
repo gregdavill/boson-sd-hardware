@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <BaliProject version="3.2" title="bosonECP5" device="LFE5U-25F-6MG285C" default_implementation="impl1">
     <Options/>
-    <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="Strategy1">
-        <Options def_top="rxuartlite" top="ecp5demo"/>
+    <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="LSE">
+        <Options def_top="OSC_TOP" top="ecp5demo"/>
         <Source name="source/ecp5demo.v" type="Verilog" type_short="Verilog">
             <Options top_module="ecp5demo"/>
         </Source>
@@ -28,9 +28,6 @@
             <Options/>
         </Source>
         <Source name="source/wb_intercon/wb_data_resize.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="source/wb_intercon/wb_intercon_gen.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="source/wb_intercon/wb_mux.v" type="Verilog" type_short="Verilog">
@@ -105,13 +102,13 @@
         <Source name="source/wbgpio.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/cmos_capture/cc_controller.v" type="Verilog" type_short="Verilog">
+        <Source name="source/cmos_capture/cc_controller.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
-        <Source name="source/cmos_capture/cc_controller_wb.v" type="Verilog" type_short="Verilog">
+        <Source name="source/cmos_capture/cc_controller_wb.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
-        <Source name="source/cmos_capture/cc_data_host.v" type="Verilog" type_short="Verilog">
+        <Source name="source/cmos_capture/cc_data_host.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
         <Source name="source/cmos_capture/sd_fifo_filler.v" type="Verilog" type_short="Verilog" excluded="TRUE">
@@ -162,27 +159,6 @@
         <Source name="source/sump2/ram_64.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/wb_streamer/wb_stream_reader.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="source/wb_streamer/wb_stream_reader_cfg.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="source/wb_streamer/wb_stream_reader_ctrl.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="source/wb_streamer/dual_clock_fifo.v" type="Verilog" type_short="Verilog" excluded="TRUE">
-            <Options/>
-        </Source>
-        <Source name="source/wb_streamer/stream_dual_clock_fifo.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="source/wb_streamer/stream_fifo_if.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
         <Source name="source/wbuart/wbuart.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
@@ -219,7 +195,76 @@
         <Source name="source/hyperram_pll/hyper_xface_pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
-        <Source name="source/wb_streamer/fifo_ram.v" type="Verilog" type_short="Verilog">
+        <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_streamer/wb_stream_reader_ctrl.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_streamer/wb_stream_reader_cfg.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_streamer/wb_stream_reader.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/dual_clock_fifo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/fifo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/fifo_fwft.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/simple_dpram_sclk.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/fifo_fwft_adapter.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/stream_utils/stream_downsizer.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/stream_utils/stream_dual_clock_fifo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/stream_utils/stream_fifo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/stream_utils/stream_fifo_if.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/stream_utils/stream_mux.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/stream_utils/stream_upsizer.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/cd_fifo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/fifo/cd_fifo_dc.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_intercon/intercon_gen.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/ccc_cfg.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="int_osc.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/sim/full_sim.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
+            <Options/>
+        </Source>
+        <Source name="source/sim/models/spiflash.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
+            <Options/>
+        </Source>
+        <Source name="source/sim/models/s27ks0641.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
+            <Options/>
+        </Source>
+        <Source name="source/sim/models/boson_sim.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
             <Options/>
         </Source>
         <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">
@@ -228,6 +273,19 @@
         <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
             <Options/>
         </Source>
+        <Source name="rtl_sim/rtl_sim.spf" type="Simulation Project File" type_short="SPF">
+            <Options/>
+        </Source>
+        <Source name="sim_test/sim_test.spf" type="Simulation Project File" type_short="SPF">
+            <Options/>
+        </Source>
+        <Source name="simulationfile/simulationfile.spf" type="Simulation Project File" type_short="SPF">
+            <Options/>
+        </Source>
+        <Source name="simulationtest/simulationtest.spf" type="Simulation Project File" type_short="SPF">
+            <Options/>
+        </Source>
     </Implementation>
+    <Strategy name="LSE" file="LSE.sty"/>
     <Strategy name="Strategy1" file="bosonECP51.sty"/>
 </BaliProject>

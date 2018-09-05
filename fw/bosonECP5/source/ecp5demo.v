@@ -61,8 +61,8 @@ module ecp5demo (
 	output wire HRAM_RESET,
 	
 	input wire SDMMC_CD,
-	output wire [3:0] SDMMC_DATA,
-	output wire SDMMC_CMD,
+	inout wire [3:0] SDMMC_DATA,
+	inout wire SDMMC_CMD,
 	output wire SDMMC_CK,
 
 	/* 16bit CMOS Camera interface */
