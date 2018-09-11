@@ -1,7 +1,9 @@
 full_sim.v
 models/spiflash.v
+models/sdModel.v
 support/vlog_tb_utils/vlog_tap_generator.v
 support/vlog_tb_utils/vlog_tb_utils.v
+models/boson_sim.v
 ../ecp5demo.v
 ../picosoc.v
 ../picorv32.v
@@ -21,7 +23,7 @@ support/vlog_tb_utils/vlog_tb_utils.v
 ../wbuart/ufifo.v
 ../wbuart/wbuart.v
 ../wb_intercon/wb_arbiter.v
-../wb_intercon/wb_intercon_gen.v
+../wb_intercon/intercon_gen.v
 ../wb_intercon/wb_mux.v
 ../sdc_dma/verilog/sdc_controller.v
 ../sdc_dma/verilog/bistable_domain_cross.v
@@ -41,6 +43,7 @@ support/vlog_tb_utils/vlog_tb_utils.v
 ../sdc_dma/verilog/sd_data_xfer_trig.v
 ../sdc_dma/verilog/sd_fifo_filler.v
 ../sdc_dma/verilog/sd_wb_sel_ctrl.v
+../sdc_dma/verilog/fifo_wrapper.v
 ../cmos_capture/cc_controller.v
 ../cmos_capture/cc_controller_wb.v
 ../cmos_capture/cc_data_host.v
@@ -49,9 +52,6 @@ support/vlog_tb_utils/vlog_tb_utils.v
 ../wb_intercon/wb_cdc.v
 ../wb_intercon/wb_data_resize.v
 ../wb_intercon/wb_upsizer.v
-../wb_streamer/dual_clock_fifo.v
-../wb_streamer/stream_dual_clock_fifo.v
-../wb_streamer/stream_fifo_if.v
 ../wb_streamer/wb_stream_reader_cfg.v
 ../wb_streamer/wb_stream_reader_ctrl.v
 ../wb_streamer/wb_stream_reader.v
@@ -59,3 +59,10 @@ support/vlog_tb_utils/vlog_tb_utils.v
 ../wb_streamer/wb_stream_writer_ctrl.v
 ../wb_streamer/wb_stream_writer_fifo.v
 ../wb_streamer/wb_stream_writer.v
+../stream_utils/stream_dual_clock_fifo.v
+../stream_utils/stream_upsizer.v
+../stream_utils/stream_fifo_if.v
+../fifo/dual_clock_fifo.v
+../fifo/fifo.v
+../fifo/simple_dpram_sclk.v
+../ccc_cfg.v

@@ -74,18 +74,26 @@ module bosonCamera (
 
 			if(((frame_clk % 1711) > 692) && ((frame_clk % 1711) < (692 + 320))) begin
 				CMOS_VALID = 1; 
-				pixel_cnt = pixel_cnt + 1;
-
-				CMOS_DQ = pixel_cnt;
+				//CMOS_DQ = pixel_cnt;
+				if((pixel_cnt + 1) % 4 < 2)
+				CMOS_DQ = 16'hFFFF;
+				else
+				CMOS_DQ = 16'h0000;
 			end else begin
 				CMOS_VALID = 0;
 				CMOS_DQ = 16'b0;
 			end
+
+				pixel_cnt = pixel_cnt + 1;
+
+				
 		end
 
 		if(frame_clk >= (1711 * 263)) begin
 			pixel_cnt = 0;
 			frame_clk = 0;
 		end
+
+
 	end
 endmodule

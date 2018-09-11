@@ -102,8 +102,9 @@ module ecp5demo (
 	
 
 `ifdef SIM
-	reg [2:0] reset_cnt = 0;
-	wire resetn = reset_cnt[2];
+	reg [4:0] reset_cnt = 0;
+	wire resetn = reset_cnt[4];
+	assign pll_lock = 1;
 `else
 	reg [21:0] reset_cnt = 0;
 	wire resetn = reset_cnt[21];
@@ -281,9 +282,12 @@ module ecp5demo (
 	reg [3:0] dat_out_ff;
 	always @(negedge sd_clk_pad_o)
 		dat_out_ff <= sd_dat_out;
+	reg dat_out_oe;
+	always @(negedge sd_clk_pad_o)
+		dat_out_oe <= !sd_dat_oe;
 	BBPU sdmmc_io_buf[3:0] (
 		.B(SDMMC_DATA),
-		.T(!sd_dat_oe),
+		.T(dat_out_oe),
 		.I(dat_out_ff),
 		.O(sd_dat_in)
 	);

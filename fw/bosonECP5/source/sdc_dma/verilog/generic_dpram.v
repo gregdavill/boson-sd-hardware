@@ -101,7 +101,7 @@
 
 module generic_dpram(
 	// Generic synchronous dual-port RAM interface
-	rclk, rrst, rce, oe, raddr, do_,
+	rclk, rrst, rce, oe, raddr, do,
 	wclk, wrst, wce, we, waddr, di
 );
 
@@ -120,7 +120,7 @@ module generic_dpram(
 	input           rce;   // read port chip enable, active high
 	input           oe;	   // output enable, active high
 	input  [aw-1:0] raddr; // read address
-	output [dw-1:0] do_;    // data output
+	output [dw-1:0] do;    // data output
 
 	// write port
 	input          wclk;  // write clock, rising edge trigger
@@ -149,7 +149,7 @@ module generic_dpram(
 	  if (rce)
 	    ra <= raddr;
 
-	assign do_ = mem[ra];
+	assign do = mem[ra];
 
 	// write operation
 	always@(posedge wclk)

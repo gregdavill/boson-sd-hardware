@@ -209,7 +209,7 @@ generic_dpram  #(aw,dw) u0(
 	.rce(		1'b1		),
 	.oe(		1'b1		),
 	.raddr(		rp_bin[aw-1:0]	),
-	.do_(		dout		),
+	.do(		dout		),
 	.wclk(		wr_clk		),
 	.wrst(		!wr_rst		),
 	.wce(		1'b1		),
@@ -321,3 +321,4 @@ always @(posedge rd_clk)	rd_level <= full_rc ? 2'h0 : {d2[aw-1] | empty, d2[aw-2
 // synopsys translate_on
 
 endmodule
+

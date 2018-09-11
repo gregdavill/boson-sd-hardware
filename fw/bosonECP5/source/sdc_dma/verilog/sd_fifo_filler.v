@@ -74,7 +74,7 @@ module sd_fifo_filler(
            output wb_empty_o
        );
 
-`define FIFO_MEM_ADR_SIZE 8
+`define FIFO_MEM_ADR_SIZE 4
 `define MEM_OFFSET 4
 
 wire reset_fifo;

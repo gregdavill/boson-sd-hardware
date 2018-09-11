@@ -277,9 +277,9 @@ sd_data_master sd_data_master0(
 sd_data_serial_host sd_data_serial_host0(
     .sd_clk         (sd_clk_o),
     .rst            (wb_rst_i | software_reset_reg_sd_clk[0]),
-    .data_in        (data_out_tx_fifo),
+    .raw_data_in        (data_out_tx_fifo),
     .rd             (rd_fifo),
-    .data_out       (data_in_rx_fifo),
+    .raw_data_out       (data_in_rx_fifo),
     .we             (we_fifo),
     .DAT_oe_o       (sd_dat_oe_o),
     .DAT_dat_o      (sd_dat_out_o),
