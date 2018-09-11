@@ -7,14 +7,50 @@
 // know that because "sram" is a linker symbol from sections.lds.
 extern uint32_t sram;
 
+
+#define UART0_BASE 0x02001100
+#define UART0_SETUP (*(volatile uint32_t*)((UART0_BASE) + 0x0))
+#define UART0_FIFO  (*(volatile uint32_t*)((UART0_BASE) + 0x4))
+#define UART0_RXREG (*(volatile uint32_t*)((UART0_BASE) + 0x8))
+#define UART0_TXREG (*(volatile uint32_t*)((UART0_BASE) + 0xc))
+
+#define UART1_BASE 0x02001200
+#define UART1_SETUP (*(volatile uint32_t*)((UART1_BASE) + 0x0))
+#define UART1_FIFO  (*(volatile uint32_t*)((UART1_BASE) + 0x4))
+#define UART1_RXREG (*(volatile uint32_t*)((UART1_BASE) + 0x8))
+#define UART1_TXREG (*(volatile uint32_t*)((UART1_BASE) + 0xc))
+
+
+
+
 #define reg_spictrl     (*(volatile uint32_t*)0x02000000)
-#define reg_uart_clkdiv (*(volatile uint32_t*)0x02000100)
-#define reg_uart_data   (*(volatile uint32_t*)0x02000104)
 #define reg_leds        (*(volatile uint32_t*)0x02000200)
 
 
 #define reg_hyperram_ctrl_a (*(volatile uint32_t *)0x02010010)
 #define reg_hyperram_ctrl_b (*(volatile uint32_t *)0x02010014)
+
+#define CCC_BASE 0x02100100
+#define CCC_STATUS (*(volatile uint32_t*)(CCC_BASE + 0x04))
+
+#define CC_ENABLE (*(volatile uint32_t*)(0x02002100))
+
+#define CCC_STREAMER_BASE 0x02002000
+#define CCC_STREAM_STATUS (*(volatile uint32_t*)(CCC_STREAMER_BASE + 0x00))
+#define CCC_STREAM_START_ADR (*(volatile uint32_t*)(CCC_STREAMER_BASE + 0x04))
+#define CCC_STREAM_BUF_SIZE (*(volatile uint32_t*)(CCC_STREAMER_BASE + 0x08))
+#define CCC_STREAM_BURST_SIZE (*(volatile uint32_t*)(CCC_STREAMER_BASE + 0x0C))
+#define CCC_STREAM_TX_CNT (*(volatile uint32_t*)(CCC_STREAMER_BASE + 0x10))
+
+
+#define HRAM0_LATENCY_1 (*(volatile uint32_t*)(0x02200000))
+#define HRAM0_LATENCY_2 (*(volatile uint32_t*)(0x02200004))
+#define HRAM0_CFG (*(volatile uint32_t*)      (0x02200008))
+
+#define HRAM0 (*(volatile uint32_t*)(0x04000000))
+
+
+
 
 // --------------------------------------------------------
 
@@ -88,7 +124,10 @@ void putchar(char c)
 {
 	if (c == '\n')
 		putchar('\r');
-	reg_uart_data = c;
+
+	while((UART0_TXREG & (1 << 13)) != 0);
+
+	UART0_TXREG = c;
 }
 
 void print(const char *p)
@@ -138,7 +177,7 @@ void print_dec(uint32_t v)
 
 char getchar_prompt(char *prompt)
 {
-	int32_t c = -1;
+	int32_t c = 0x100;
 	int flip = 0;
 
 	uint32_t cycles_begin, cycles_now, cycles;
@@ -148,7 +187,7 @@ char getchar_prompt(char *prompt)
 		print(prompt);
 
 	reg_leds = 0x00010001;
-	while (c == -1) {
+	while (c & 0x100) {
 		__asm__ volatile ("rdcycle %0" : "=r"(cycles_now));
 		cycles = cycles_now - cycles_begin;
 		if (cycles > 12000000) {
@@ -158,7 +197,7 @@ char getchar_prompt(char *prompt)
 			reg_leds = 0x00010000 | flip;
 			flip ^= 1;
 		}
-		c = reg_uart_data;
+		c = UART0_RXREG;
 	}
 	reg_leds = 0x00010000;
 	return c;
@@ -384,15 +423,29 @@ FIL Fil;			/* File object needed for each open file */
 
 void fatFS_write(void)
 {
-	UINT bw;
+	UINT bw = 0;
 	FRESULT res;
 
 	print("FatFs Test\r\n");
+
+	print("FatFs buff:");
+		print_hex(FatFs.win,8);
+	print("\r\nFil Buffer:");
+
+		print_hex(Fil.buf,8);
+	print("\r\n");
 	
 
 	res = f_mount(&FatFs, "", 0);		/* Give a work area to the default drive */
 	if ((res = f_open(&Fil, "newfile.txt", FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK) {	/* Create a file */
-		if((res = f_write(&Fil, "It works!\r\n", 11, &bw)) == FR_OK){	/* Write data to the file */
+		uint8_t* ptr = 0x04000000;
+		
+		for(int i = 0; i< 1024 && res == FR_OK; i++){
+			res = f_write(&Fil, ptr, 512, &bw);
+			ptr += 512;
+		}
+		
+		if(res == FR_OK){	/* Write data to the file */
 			if((res = f_close(&Fil)) == FR_OK){								/* Close the file */
 				if (bw == 11 && res == FR_OK) {		/* Lights green LED if data written well */
 					print("It Works\r\n");
@@ -408,6 +461,9 @@ void fatFS_write(void)
 		print("\r\n");
 		print_hex(bw,4);
 		print("\r\n");
+
+
+		dump (FatFs.win, 0);
 	}
 
 	print("Test Complete\r\n");
@@ -417,7 +473,22 @@ void fatFS_write(void)
 
 uint8_t buff[512] __attribute__((aligned(8)));
 
-void SD_ll()
+void SDMMC_readblock()
+{
+	disk_initialize(0);
+
+	disk_read (
+		0,
+		buff,
+		0x8000,
+		1
+	);
+
+	dump(buff, 512);
+}
+
+
+void SDMMC_writeblock()
 {
 	disk_initialize(0);
 
@@ -437,8 +508,9 @@ void SD_ll()
 	);
 
 	dump(buff, 512);
-
 }
+
+
 
 
 
@@ -478,17 +550,230 @@ void dump (const BYTE *buff, WORD cnt)
 	WORD ofs;
 
 for (bp=buff, ofs = 0; ofs < 0x200; bp+=16, ofs+=16)
-					put_dump(bp, ofs, 16);
+					put_dump(bp, cnt+ofs, 16);
+}
+
+
+void check_CCC_status()
+{
+	print("CMOS Capture Controller Status:\r\n");
+	
+	print("Pixel count: 0x");
+//	print_hex(CCC,8);
+	print("\r\n");
+}
+
+
+void short_delay()
+{
+	uint32_t cycles_begin, cycles_now, cycles;
+	__asm__ volatile ("rdcycle %0" : "=r"(cycles_begin));
+
+	while (true) {
+		__asm__ volatile ("rdcycle %0" : "=r"(cycles_now));
+		cycles = cycles_now - cycles_begin;
+		if (cycles > 48000000) {
+			break;
+		}
+	}
+}
+
+int flip = 0;
+
+	uint32_t data_buf[640];
+
+char c;
+
+void test_uart(){
+	
+	//CCC_START_ADR = (uint32_t)data_buf;
+	//CCC_BUF_SIZE = 320;
+	//CCC_BURST_SIZE = 1;
+
+
+	/* Prep the Stream DMA */
+	//CCC_STREAM_STATUS = 1;
+
+	/* Gate the data from the camera */
+	//CCC_DATA_COUNT = 1;
+
+
+	short_delay();
+	
+	//while(CCC_STREAM_STATUS & 1){
+
+	//}
+
+	for(int i = 0; i < 6; i++)
+	{
+		c++;
+		if(c > '~')
+			c = ' ';
+
+		putchar(c);
+	}
+
+	flip ^= 1;
+	reg_leds = 0x00010000 | flip;
+
+
+}
+
+
+
+void test_ccc(){
+	
+	CCC_STREAM_START_ADR = (uint32_t)data_buf;
+	CCC_STREAM_BUF_SIZE = 640;
+	CCC_STREAM_BURST_SIZE = 4;
+
+	/* Prep the Stream DMA */
+	CCC_STREAM_STATUS = 1;
+
+	/* Gate the data from the camera */
+	CCC_STATUS = 1;
+
+
+	while((CCC_STREAM_STATUS & 2) == 0){
+
+		short_delay();
+		
+		flip ^= 1;
+		reg_leds = 0x00010000 | flip;
+
+		print_hex(CCC_STREAM_TX_CNT, 4);
+		print("\r\n");
+	}
+
+	/* clear IRQ */
+	CCC_STREAM_STATUS = 2;
+
+
+	dump (data_buf, 0);
+}
+
+
+
+void HRAM_write_test_good(){
+	uint32_t* ptr = (uint32_t*)0x04000000;
+
+	for(int i= 0; i < 2048; i++){
+		*ptr++ = i;
+	}
+}
+
+
+#define HRAM0 (*(volatile uint32_t*)(0x04000000))
+
+void HRAM_write_test_bad(){
+	uint32_t* ptr = HRAM0;
+
+	for(int i= 0; i < 2048; i++){
+		*ptr++ = i;
+	}
+}
+
+void test_HRAM_rnd(){
+	
+	CCC_STREAM_START_ADR = (uint32_t)0x04000000;
+	CCC_STREAM_BUF_SIZE = 320*256*2;
+	CCC_STREAM_BURST_SIZE = 8;
+
+	/* Prep the Stream DMA */
+	CCC_STREAM_STATUS = 1;
+
+	/* Gate the data from the camera */
+	CCC_STATUS = 1;
+
+
+	while((CCC_STREAM_STATUS & 2) == 0){
+
+		short_delay();
+		
+		flip ^= 1;
+		reg_leds = 0x00010000 | flip;
+
+		print_hex(CCC_STREAM_TX_CNT, 4);
+		print("\r\n");
+	}
+
+	/* clear IRQ */
+	CCC_STREAM_STATUS = 2;
+
+
+	dump (0x04000000, 0);
+//	dump (HRAM0+128, 0x200);
+}
+
+
+
+void test_HRAM_read(){
+	
+	uint32_t* ptr = (uint32_t*)0x04000000;
+dump (ptr, 0);
+dump (ptr+128, 0x200);
+}
+
+
+void simple_test()
+{
+	while(1){
+
+		flip ^= 1;
+		reg_leds = 0x00010000 | flip;
+	}
+}
+
+void WriteCapturedImage()
+{
+
+}
+
+
+void CaptureCamera()
+{
+	
+	print("Capture stream to 0x04000000\r\n");
+	CCC_STREAM_START_ADR = (uint32_t)0x04000000;
+	CCC_STREAM_BUF_SIZE = 320*256*2;
+	CCC_STREAM_BURST_SIZE = 8;
+
+	/* Enable the Stream DMA */
+	CCC_STREAM_STATUS = 1;
+
+	/* Gate the data from the camera */
+	CC_ENABLE = 1;
+
+	/* Wait for IRQ signal to be set */
+	while((CCC_STREAM_STATUS & 2) == 0){
+
+		short_delay();
+		
+		flip ^= 1;
+		reg_leds = 0x00010000 | flip;
+
+		print_hex(CCC_STREAM_TX_CNT, 4);
+		print(" - ");
+		print_hex(CC_ENABLE, 1);
+		print("\r\n");
+	}
+
+
+	/* clear IRQ */
+	CCC_STREAM_STATUS = 2;
+
+	print("Data at 0x04000000:\r\n");
+	dump (0x04000000, 0);	
 }
 
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
 
 void main()
 {
-
 	// copy data section
 	for (uint32_t *src = &_sidata, *dest = &_sdata; dest < &_edata;)
 	{
+
 		*dest++ = *src++;
 	}
 	// zero out .bss section
@@ -496,12 +781,19 @@ void main()
 	{
 		*dest++ = 0;
 	}
-	reg_uart_clkdiv = 416;
-	set_flash_qspi_flag();
+	UART0_SETUP = 417;
+	//set_flash_qspi_flag();
 
-	set_flash_latency(4);
-	reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00300000;
+	//set_flash_latency(4);
+	//reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00300000;
 
+	//test_HRAM_rnd();
+
+	//simple_test();
+
+	//HRAM0_LATENCY_1 = 0x04;
+	//HRAM0_LATENCY_2 = 0x0a;
+	//HRAM0_CFG = 0x8fe40000;
 
 	//set_hyperram_speed();
 
@@ -523,40 +815,14 @@ void main()
 	while (1)
 	{
 		print("\n");
-		print("\n");
-		print("SPI State:\n");
-
-		print("  LATENCY ");
-		print_dec((reg_spictrl >> 16) & 15);
-		print("\n");
-
-		print("  DDR ");
-		if ((reg_spictrl & (1 << 22)) != 0)
-			print("ON\n");
-		else
-			print("OFF\n");
-
-		print("  QSPI ");
-		if ((reg_spictrl & (1 << 21)) != 0)
-			print("ON\n");
-		else
-			print("OFF\n");
-
-		print("  CRM ");
-		if ((reg_spictrl & (1 << 20)) != 0)
-			print("ON\n");
-		else
-			print("OFF\n");
 
 		print("\n");
 		print("Select an action:\n");
 		print("\n");
 		print("   [1] FATFS Write\n");
-		print("   [2] Read SPI Config Regs\n");
-		print("   [3] Switch to default mode\n");
-		print("   [4] Switch to Dual I/O mode\n");
-		print("   [5] Switch to Quad I/O mode\n");
-		print("   [6] Switch to Quad DDR mode\n");
+		print("   [2] Capture from Camera\n");
+		print("   [3] SD_READ\n");
+		print("   [4] SD_WRITE\n");
 		print("   [7] Toggle continuous read mode\n");
 		print("   [9] Run simplistic benchmark\n");
 		print("   [0] Benchmark all configs\n");
@@ -576,18 +842,17 @@ void main()
 				fatFS_write();
 				break;
 			case '2':
-				SD_ll();
+				CaptureCamera();
+				break;
 			case '3':
-				reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00000000;
+				SDMMC_readblock();
 				break;
 			case '4':
-				reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00400000;
+				SDMMC_writeblock();
 				break;
 			case '5':
-				reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00200000;
 				break;
 			case '6':
-				reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00600000;
 				break;
 			case '7':
 				reg_spictrl = reg_spictrl ^ 0x00100000;
