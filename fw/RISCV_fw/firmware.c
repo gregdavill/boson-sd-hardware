@@ -729,6 +729,93 @@ void WriteCapturedImage()
 
 }
 
+void set_filename(char* p, int i){
+	*p++ = 'I';
+	*p++ = 'M';
+	*p++ = 'G';
+	*p++ = '_';
+	*p++ = '0' + i / 1000 % 10;
+	*p++ = '0' + i / 100 % 10;
+	*p++ = '0' + i / 10 % 10;
+	*p++ = '0' + i % 10;
+	*p++ = '.';
+	*p++ = 'R';
+	*p++ = 'A';
+	*p++ = 'W';
+}
+
+void continuousCapture()
+{
+
+	char filename[13];
+	int image_number = 0;
+
+	while(1){
+
+
+
+		set_filename(filename,0);
+		
+		/* Capture our image length into external hyperRAM */
+		/* Burst size is in DWORDS, 8 = 16 clock cycles */
+		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
+		CCC_STREAM_BUF_SIZE = 320*256*2;
+		CCC_STREAM_BURST_SIZE = 8;
+
+		/* Enable the Stream DMA */
+		CCC_STREAM_STATUS = 1;
+
+		/* Gate the data from the camera */
+		CC_ENABLE = 1;
+
+		/* Wait for IRQ signal to be set */
+		while((CCC_STREAM_STATUS & 2) == 0){
+			reg_leds = 0x00010001;
+			reg_leds = 0x00010000;
+		}
+
+		/* clear IRQ */
+		CCC_STREAM_STATUS = 2;
+
+		blink_led(1);
+
+		UINT bw = 0;
+		FRESULT res;
+
+		res = f_mount(&FatFs, "", 0);		/* Give a work area to the default drive */
+		if ((res = f_open(&Fil, filename, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK) {	/* Create a file */
+			uint8_t* ptr = 0x04000000;
+			
+			for(int i = 0; i< 1024 && res == FR_OK; i++){
+				res = f_write(&Fil, ptr, 512, &bw);
+				ptr += 512;
+			}
+			
+			if((res = f_close(&Fil)) == FR_OK){								/* Close the file */
+				blink_led(2);
+			}
+
+		}
+
+		if(res != FR_OK){
+			blink_led(5);
+		}
+	}
+
+}
+
+void blink_led(int numBlinks) {
+		
+	for(int i = 0; i < numBlinks; i++){
+		reg_leds = 0x00010001;
+		short_delay();
+		reg_leds = 0x00010000;
+		short_delay();
+	}
+	
+	short_delay();
+	
+}
 
 void CaptureCamera()
 {
@@ -799,6 +886,10 @@ void main()
 
 	
 	//set_hyperram_speed();
+
+	/* continuous capture */
+	continuousCapture();
+
 
 	while (getchar_prompt("Press ENTER to continue..\n") != '\r')
 	{ /* wait */

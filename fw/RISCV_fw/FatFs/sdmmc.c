@@ -31,16 +31,15 @@
 
 #define NULL (0)
 
-
-extern void print(const char*);
+extern void print(const char *);
 extern void dump(const BYTE *buff, WORD cnt);
 
-
-void memcpy(uint8_t* dst,uint8_t* src, uint32_t count){
-	if(count == 0)
+void memcpy(uint8_t *dst, uint8_t *src, uint32_t count)
+{
+	if (count == 0)
 		return;
 
-	while(count--)
+	while (count--)
 		*dst++ = *src++;
 }
 
@@ -70,9 +69,6 @@ void memcpy(uint8_t* dst,uint8_t* src, uint32_t count){
 #define SDC_BLOCKSIZE *(uint32_t *)(SDC_BASE + 0x44)
 #define SDC_BLOCKCOUNT *(uint32_t *)(SDC_BASE + 0x48)
 #define SDC_DST_SRC_ADDRESS *(uint32_t *)(SDC_BASE + 0x60)
-
-
-
 
 static void dly_us(UINT n) /* Delay n microseconds (avr-gcc -Os) */
 {
@@ -141,7 +137,6 @@ static WORD CardRCA;	   /* Assigned RCA */
 static BYTE CardType,	  /* Card type flag */
 	CardInfo[16 + 16 + 4]; /* CSD(16), CID(16), OCR(4) */
 
-
 /* Block transfer buffer (located in USB RAM) */
 //static DWORD blockBuff[128] __attribute__((section(".scratchpadRam0")));
 
@@ -166,26 +161,25 @@ static int send_cmd(			/* Returns 1 when function succeeded otherwise returns 0 
 	}
 	idx &= 0x3F; /* Mask out ACMD flag */
 
-
 	SDC_CMD_EVENT_ENABLE = 0x1F;
 	SDC_DATA_EVENT_ENABLE = 0x1F;
 
-	mc = (idx << 8) | 0x18;   /* Enable bit + index */
+	mc = (idx << 8) | 0x18; /* Enable bit + index */
 	if (rt & 1)
 		mc |= 0x01; /* Set Response bit to reveice short resp */
 	if (rt & 0x2)
-		mc |= 0x02;  /* Set Response and LongResp bit to receive long resp */
+		mc |= 0x02; /* Set Response and LongResp bit to receive long resp */
 
 	/* Do we have to send/recv data after the cmd */
-	if(rt & 0x4) /* Read */
+	if (rt & 0x4) /* Read */
 		mc |= 0x20;
-	if(rt & 0x8) /* Read */
+	if (rt & 0x8) /* Read */
 		mc |= 0x40;
 	//mc |= ((rt & 0xC) << 3);
-	
+
 	SDC_CMD_EVENT_STATUS = 0;
 
-	SDC_COMMAND = mc; /* Initiate command transaction */
+	SDC_COMMAND = mc;   /* Initiate command transaction */
 	SDC_ARGUMENT = arg; /* Set the argument into argument register */
 
 	for (;;)
@@ -261,9 +255,6 @@ static void bswap_cp(BYTE *dst, const DWORD *src)
 	*dst++ = (BYTE)(d >> 0);
 }
 
-
-
-
 /*--------------------------------------------------------------------------
 
    Public Functions
@@ -273,12 +264,12 @@ static void bswap_cp(BYTE *dst, const DWORD *src)
 /*-----------------------------------------------------------------------*/
 /* Initialize Disk Drive                                                 */
 /*-----------------------------------------------------------------------*/
-	
+
 /*-----------------------------------------------------------------------*/
 /* Initialize Disk Drive                                                 */
 /*-----------------------------------------------------------------------*/
 
-DSTATUS disk_initialize (BYTE pdrv)
+DSTATUS disk_initialize(BYTE pdrv)
 {
 	UINT cmd, n;
 	DWORD resp[4];
@@ -287,21 +278,20 @@ DSTATUS disk_initialize (BYTE pdrv)
 	if (Stat & STA_NODISK)
 		return Stat; /* No card in the socket */
 
-		//print("1");
+	//print("1");
 
 	SDC_RESET = 1;
 	//power_on();									  /* Force socket power on */
 	//MCI_CLOCK = 0x100 | (PCLK / MCLK_ID / 2 - 1); /* Set MCICLK = MCLK_ID */
-dly_us(1000); /* 10ms */
+	dly_us(1000); /* 10ms */
 
-SDC_RESET = 0;
-SDC_CLOCK_DIVIDER = 10;
+	SDC_RESET = 0;
+	SDC_CLOCK_DIVIDER = 10;
 
-SDC_DATA_TIMEOUT = 25000;
-SDC_CMD_TIMEOUT = 2500;
+	SDC_DATA_TIMEOUT = 25000;
+	SDC_CMD_TIMEOUT = 2500;
 
-dly_us(1000); /* 10ms */
-
+	dly_us(1000); /* 10ms */
 
 	send_cmd(CMD0, 0, 0, NULL); /* Put the card into idle state */
 	CardRCA = 0;
@@ -388,26 +378,27 @@ dly_us(1000); /* 10ms */
 			goto di_fail;
 	}
 
-if(0)
-//	if (ty & CT_SDC)
+	/* For now we are disabling 4bit mode. */
+	if (0)
+	//	if (ty & CT_SDC)
 	{ /* Set wide bus mode (for SDCs) */
 		if (!send_cmd(ACMD6, 2, 1, resp) || (resp[0] & 0xFDF90000))
 		{ /* Set wide bus mode of SDC */
 			goto di_fail;
 		}
-		
+
 		SDC_CONTROL = 1; /* Enable Wide bus */
 	}
 
+	/* Set clock speed to 24MHz */
 	SDC_CLOCK_DIVIDER = 0;
-	//MCI_CLOCK = (MCI_CLOCK & 0xF00) | 0x200 | (PCLK / MCLK_RW / 2 - 1); /* Set MCICLK = MCLK_RW, power-save mode */
 
 	Stat &= ~STA_NOINIT; /* Clear STA_NOINIT */
 	return Stat;
 
 di_fail:
 	print("Init Fail\r\n");
-	//power_off();
+	
 	Stat |= STA_NOINIT; /* Set STA_NOINIT */
 	return Stat;
 }
@@ -416,7 +407,7 @@ di_fail:
 /* Get Disk Status                                                       */
 /*-----------------------------------------------------------------------*/
 
-DSTATUS disk_status (BYTE pdrv)
+DSTATUS disk_status(BYTE pdrv)
 {
 	return Stat;
 }
@@ -424,7 +415,7 @@ DSTATUS disk_status (BYTE pdrv)
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
 /*-----------------------------------------------------------------------*/
-DRESULT disk_read (
+DRESULT disk_read(
 	BYTE pdrv,
 	BYTE *buff,   /* Pointer to the data buffer to store read data */
 	DWORD sector, /* Start sector number (LBA) */
@@ -445,35 +436,38 @@ DRESULT disk_read (
 	if (!wait_ready(500))
 		return RES_ERROR; /* Make sure that card is tran state */
 
-
 	/* Tell SDC DMA about out data */
 	SDC_DST_SRC_ADDRESS = (uint32_t)buff;
 	SDC_BLOCKSIZE = 0x1FF;
 	SDC_BLOCKCOUNT = count - 1;
 	SDC_DATA_EVENT_ENABLE = 0x1F;
-	SDC_DATA_TIMEOUT = 50000; /* 2ms */
+	SDC_DATA_TIMEOUT = 50000; /* 2ms, Extend this based on blocks? */
 	SDC_DATA_EVENT_STATUS = 0;
 
-	cmd = (count > 1) ? CMD18 : CMD17;  /* Transfer type: Single block or Multiple block */
-	if (send_cmd(cmd, sector, 1 | 0x4, &resp) /* Start to read */
+	cmd = (count > 1) ? CMD18 : CMD17;		  /* Transfer type: Single block or Multiple block */
+	if (!send_cmd(cmd, sector, 1 | 0x4, &resp) /* Start to read */
 		&& !(resp & 0xC0580000))
 	{
-
+		/* What errors could we see when reading? */
+		return RES_ERROR;
 	}
 
-	/* Wait for data to finish Xfer */
-	while(SDC_DATA_EVENT_STATUS == 0);
+	/* Wait for data to finish Xfer, or a timeout */
+	while (SDC_DATA_EVENT_STATUS == 0)
+		;
 
-	if(!(SDC_DATA_EVENT_STATUS & 1)) {
-			return RES_ERROR;
+	/* Maybe needed? Testing on hradware required */
+	if (cmd == CMD18)
+	{ /* Terminate to read if needed */
+		send_cmd(CMD12, 0, 1, &resp);
 	}
 
+	/* Timeout or CRC error */
+	if (!(SDC_DATA_EVENT_STATUS & 1))
+	{
+		return RES_ERROR;
+	}
 
-	//stop_transfer(); /* Close data path */
-	//if (count || cmd == CMD18)
-	//{ /* Terminate to read if needed */
-	//	send_cmd(CMD12, 0, 1, &resp);
-	//}
 
 	return RES_OK;
 	//return count ? RES_ERROR : RES_OK;
@@ -483,7 +477,7 @@ DRESULT disk_read (
 /* Write Sector(s)                                                       */
 /*-----------------------------------------------------------------------*/
 
-DRESULT disk_write (
+DRESULT disk_write(
 	BYTE pdrv,
 	const BYTE *buff, /* Pointer to the data to be written */
 	DWORD sector,	 /* Start sector number (LBA) */
@@ -523,7 +517,7 @@ DRESULT disk_write (
 
 	/* Tell SDC DMA about out data */
 	SDC_DST_SRC_ADDRESS = buff;
-	SDC_BLOCKCOUNT = count-1;
+	SDC_BLOCKCOUNT = count - 1;
 	SDC_BLOCKSIZE = 0x1FF;
 	SDC_DATA_EVENT_ENABLE = 0x1F;
 	SDC_DATA_EVENT_STATUS = 0;
@@ -538,17 +532,19 @@ DRESULT disk_write (
 	}
 
 	/* Wait for data to finish Xfer */
-	while(SDC_DATA_EVENT_STATUS == 0);
+	while (SDC_DATA_EVENT_STATUS == 0)
+		;
 
-	if(!(SDC_DATA_EVENT_STATUS & 1)) {
-		return RES_ERROR;
+	/* Maybe required?, Would we need to terminate if we had a CRC error? */
+	if (cmd == CMD25 && (CardType & CT_SDC))
+	{ /* Terminate to write if needed */
+		send_cmd(CMD12, 0, 1, &resp);
 	}
 
-
-	//if (count || (cmd == CMD25 && (CardType & CT_SDC)))
-	//{ /* Terminate to write if needed */
-	//	send_cmd(CMD12, 0, 1, &resp);
-	//}
+	if (!(SDC_DATA_EVENT_STATUS & 1))
+	{
+		return RES_ERROR;
+	}
 
 	return RES_OK;
 }
@@ -557,8 +553,7 @@ DRESULT disk_write (
 /* Miscellaneous Functions                                               */
 /*-----------------------------------------------------------------------*/
 
-
-DRESULT disk_ioctl (
+DRESULT disk_ioctl(
 	BYTE pdrv,
 	BYTE cmd,  /* Control code */
 	void *buff /* Buffer to send/receive data block */
@@ -599,7 +594,7 @@ DRESULT disk_ioctl (
 	case GET_BLOCK_SIZE: /* Get erase block size in unit of sectors (DWORD) */
 		if (CardType & CT_SD2)
 		{ /* SDC ver 2.00 */
-			if (disk_ioctl(pdrv,MMC_GET_SDSTAT, sdstat))
+			if (disk_ioctl(pdrv, MMC_GET_SDSTAT, sdstat))
 				break;
 			*(DWORD *)buff = au_size[sdstat[10] >> 4];
 		}
@@ -672,8 +667,7 @@ DRESULT disk_ioctl (
 				if (send_cmd(ACMD13, 0, 1 | 0x4, resp) /* Start to read */
 					&& !(resp[0] & 0xC0580000))
 				{
-						res = RES_OK;
-					
+					res = RES_OK;
 				}
 			}
 			print("\r\n");
