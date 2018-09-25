@@ -26,3 +26,4 @@ Due to supply issues of the ECP5 in cs285 I developed this PCB to start work on 
 * 2x 5V tolerant I/Os on connector
 * 1x LED
 * 240x240 IPS LCD. (used on NANO v6, MIPI interface)
+

@@ -1,11 +1,11 @@
-# bosonFrameGrabber
+# bosonFrameGrabber v1.02
 
-	Project Stage: VERY Early Development
+	Project Stage: Still in Development
 
 A Small FPGA based board. Designed to connect to a FLIR Boson Camera, and save images from the camera to a microSD card.
 
-![alt-text](plot/bosonFrameGrabber-Front.png "bosonFrameGrabber Front")
-![alt-text](plot/bosonFrameGrabber-Back.png "bosonFrameGrabber Back")
+![alt-text](output/renders/bosonFrameGrabber-Front.png "bosonFrameGrabber Front")
+![alt-text](output/renders/bosonFrameGrabber-Back.png "bosonFrameGrabber Back")
 
 
 ## Hardware
@@ -25,4 +25,4 @@ Prototype Limitations:
 
 ## Prototype
 
-![alt-text](plot/BosonFrameGrabber_1_02.jpg "bosonFrameGrabber Proto")
+![alt-text](output/renders/BosonFrameGrabber_1_02.jpg "bosonFrameGrabber Proto")

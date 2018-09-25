@@ -1,12 +1,12 @@
-# bosonFrameGrabber
+# bosonFrameGrabber v1.00
 
-	Project Stage: VERY Early Development
-	Bad footprint for HyperRam, use v1_01.
+	Board Status: Discarded
+	Note: bad footprint for HyperRam.
 
 A Small FPGA based board. Designed to connect to a FLIR Boson Camera, and save images from the camera to a microSD card.
 
-![alt-text](plot/bosonFrameGrabber-Front.png "bosonFrameGrabber Front")
-![alt-text](plot/bosonFrameGrabber-Back.png "bosonFrameGrabber Back")
+![alt-text](output/renders/bosonFrameGrabber-Front.png "bosonFrameGrabber Front")
+![alt-text](output/renders/bosonFrameGrabber-Back.png "bosonFrameGrabber Back")
 
 ## Hardware
 

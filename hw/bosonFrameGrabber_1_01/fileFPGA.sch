@@ -390,31 +390,31 @@ Text GLabel 2450 5100 2    60   Input ~ 0
 SD_CK
 Text GLabel 2450 5800 2    60   Input ~ 0
 SD_CD
-Text GLabel 2450 3200 2    60   Input ~ 0
-HYPERBUS_RWDS
-Text GLabel 2450 3800 2    60   Input ~ 0
-HYPERBUS_CS#
-Text GLabel 2450 3900 2    60   Input ~ 0
-HYPERBUS_RESET#
-Text GLabel 2450 2500 2    60   Input ~ 0
-HYPERBUS_CK
-Text GLabel 2450 2200 2    60   Input ~ 0
-HYPERBUS_CK#
-Text GLabel 2450 3400 2    60   Input ~ 0
-HYPERBUS_DQ0
 Text GLabel 2450 3000 2    60   Input ~ 0
-HYPERBUS_DQ1
-Text GLabel 2450 3500 2    60   Input ~ 0
-HYPERBUS_DQ2
-Text GLabel 2450 3600 2    60   Input ~ 0
-HYPERBUS_DQ3
-Text GLabel 2450 3700 2    60   Input ~ 0
-HYPERBUS_DQ4
-Text GLabel 2450 2700 2    60   Input ~ 0
-HYPERBUS_DQ5
-Text GLabel 2450 2600 2    60   Input ~ 0
-HYPERBUS_DQ6
+HYPERBUS_RWDS
+Text GLabel 2450 2200 2    60   Input ~ 0
+HYPERBUS_CS#
 Text GLabel 2450 2300 2    60   Input ~ 0
+HYPERBUS_RESET#
+Text GLabel 2450 2600 2    60   Input ~ 0
+HYPERBUS_CK
+Text GLabel 2450 2700 2    60   Input ~ 0
+HYPERBUS_CK#
+Text GLabel 2450 3500 2    60   Input ~ 0
+HYPERBUS_DQ0
+Text GLabel 2450 3600 2    60   Input ~ 0
+HYPERBUS_DQ1
+Text GLabel 2450 2800 2    60   Input ~ 0
+HYPERBUS_DQ2
+Text GLabel 2450 3200 2    60   Input ~ 0
+HYPERBUS_DQ3
+Text GLabel 2450 3400 2    60   Input ~ 0
+HYPERBUS_DQ4
+Text GLabel 2450 3700 2    60   Input ~ 0
+HYPERBUS_DQ5
+Text GLabel 2450 3800 2    60   Input ~ 0
+HYPERBUS_DQ6
+Text GLabel 2450 3900 2    60   Input ~ 0
 HYPERBUS_DQ7
 Text GLabel 5600 1900 2    60   Input ~ 0
 BOSON_DATA0
