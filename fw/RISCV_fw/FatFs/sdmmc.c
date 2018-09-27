@@ -48,7 +48,7 @@ void memcpy(uint8_t *dst, uint8_t *src, uint32_t count)
 /*-------------------------------------------------------------------------*/
 
 /* ---  SDC Configurations  --- */
-#define SDC_BASE (0x02001000)
+#define SDC_BASE (0x02100000)
 #define SDC_ARGUMENT *(uint32_t *)(SDC_BASE + 0x00)
 #define SDC_COMMAND *(uint32_t *)(SDC_BASE + 0x04)
 #define SDC_RESPONSE0 *(uint32_t *)(SDC_BASE + 0x08)
@@ -391,7 +391,7 @@ DSTATUS disk_initialize(BYTE pdrv)
 	}
 
 	/* Set clock speed to 24MHz */
-	SDC_CLOCK_DIVIDER = 0;
+	SDC_CLOCK_DIVIDER = 1;
 
 	Stat &= ~STA_NOINIT; /* Clear STA_NOINIT */
 	return Stat;
@@ -445,11 +445,12 @@ DRESULT disk_read(
 	SDC_DATA_EVENT_STATUS = 0;
 
 	cmd = (count > 1) ? CMD18 : CMD17;		  /* Transfer type: Single block or Multiple block */
-	if (!send_cmd(cmd, sector, 1 | 0x4, &resp) /* Start to read */
+	if (send_cmd(cmd, sector, 1 | 0x4, &resp) /* Start to read */
 		&& !(resp & 0xC0580000))
 	{
 		/* What errors could we see when reading? */
-		return RES_ERROR;
+		//return RES_ERROR;
+		
 	}
 
 	/* Wait for data to finish Xfer, or a timeout */
@@ -528,7 +529,7 @@ DRESULT disk_write(
 	if (!send_cmd(cmd, sector, 1 | 0x8, &resp) /* Send a write command */
 		|| (resp & 0xC0580000))
 	{
-		return RES_ERROR;
+//		return RES_ERROR;
 	}
 
 	/* Wait for data to finish Xfer */

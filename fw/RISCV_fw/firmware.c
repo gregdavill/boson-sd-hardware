@@ -440,16 +440,21 @@ void fatFS_write(void)
 	if ((res = f_open(&Fil, "newfile.txt", FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK) {	/* Create a file */
 		uint8_t* ptr = 0x04000000;
 		
-		for(int i = 0; i< 1024 && res == FR_OK; i++){
-			res = f_write(&Fil, ptr, 512, &bw);
-			ptr += 512;
-		}
-		
+
+	print("File Open\r\n");
+
+	//	for(int i = 0; i< 1024 && res == FR_OK; i++){
+	//		res = f_write(&Fil, ptr, 512, &bw);
+	//		ptr += 512;
+	//	}
+			res = f_write(&Fil, ptr, 512 * 1024, &bw);
+
+
 		if(res == FR_OK){	/* Write data to the file */
 			if((res = f_close(&Fil)) == FR_OK){								/* Close the file */
-				if (bw == 11 && res == FR_OK) {		/* Lights green LED if data written well */
+				//if (bw == 11 && res == FR_OK) {		/* Lights green LED if data written well */
 					print("It Works\r\n");
-				}
+				//}
 			}
 		}
 
@@ -742,6 +747,7 @@ void set_filename(char* p, int i){
 	*p++ = 'R';
 	*p++ = 'A';
 	*p++ = 'W';
+	*p++ = 0;
 }
 
 void continuousCapture()
@@ -786,10 +792,8 @@ void continuousCapture()
 		if ((res = f_open(&Fil, filename, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK) {	/* Create a file */
 			uint8_t* ptr = 0x04000000;
 			
-			for(int i = 0; i< 1024 && res == FR_OK; i++){
-				res = f_write(&Fil, ptr, 512, &bw);
-				ptr += 512;
-			}
+			
+			res = f_write(&Fil, ptr, 512 * 1024, &bw);
 			
 			if((res = f_close(&Fil)) == FR_OK){								/* Close the file */
 				blink_led(2);
@@ -822,7 +826,7 @@ void CaptureCamera()
 	
 	print("Capture stream to 0x04000000\r\n");
 	CCC_STREAM_START_ADR = (uint32_t)0x04000000;
-	CCC_STREAM_BUF_SIZE = 320*256*2;
+	CCC_STREAM_BUF_SIZE = (320*256*2);
 	CCC_STREAM_BURST_SIZE = 8;
 
 	/* Enable the Stream DMA */
@@ -887,8 +891,6 @@ void main()
 	
 	//set_hyperram_speed();
 
-	/* continuous capture */
-	continuousCapture();
 
 
 	while (getchar_prompt("Press ENTER to continue..\n") != '\r')
@@ -942,6 +944,8 @@ void main()
 				SDMMC_writeblock();
 				break;
 			case '5':
+	/* continuous capture */
+	continuousCapture();
 				break;
 			case '6':
 				break;
