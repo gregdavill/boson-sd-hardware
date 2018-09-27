@@ -489,7 +489,7 @@ DRESULT disk_write(
 	UINT cmd;
 	BYTE wp, xc;
 
-	if (count < 1 || count > 127)
+	if (count < 1)
 		return RES_PARERR; /* Check parameter */
 	if (Stat & STA_NOINIT)
 		return RES_NOTRDY; /* Check drive status */
@@ -524,7 +524,7 @@ DRESULT disk_write(
 	SDC_DATA_EVENT_STATUS = 0;
 
 	/* Timeout is set for 100ms due to slow SD cards on first write. */
-	SDC_DATA_TIMEOUT = 2500000; /* 100ms */
+	SDC_DATA_TIMEOUT = 7000000; /* 100ms */
 
 	if (!send_cmd(cmd, sector, 1 | 0x8, &resp) /* Send a write command */
 		|| (resp & 0xC0580000))
