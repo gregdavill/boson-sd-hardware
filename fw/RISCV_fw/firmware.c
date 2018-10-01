@@ -952,8 +952,8 @@ void continuousCapture()
 		/* Capture our image length into external hyperRAM */
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
 		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
-		CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
-		//CCC_STREAM_BUF_SIZE = 640 * 512 * 2;
+		//CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
+		CCC_STREAM_BUF_SIZE = 640 * 512 * 2;
 		CCC_STREAM_BURST_SIZE = 16;
 
 		/* Enable the Stream DMA */
@@ -981,8 +981,8 @@ void continuousCapture()
 			uint8_t *ptr = 0x04000000;
 
 			/* Find and allocate a 512kb block for us */
-			//if ((res = f_expand(&Fil, 640 * 512 * 2, 1)) == FR_OK)
-			if ((res = f_expand(&Fil, 320 * 256 * 2, 1)) == FR_OK)
+			if ((res = f_expand(&Fil, 640 * 512 * 2, 1)) == FR_OK)
+			//if ((res = f_expand(&Fil, 320 * 256 * 2, 1)) == FR_OK)
 			{
 				/* Accessing the contiguous file via low-level disk functions */
 
@@ -991,8 +991,8 @@ void continuousCapture()
 				DWORD lba = Fil.obj.fs->database + Fil.obj.fs->csize * (Fil.obj.sclust - 2);
 
 				/* Write 2048 sectors from top of the file at a time */
-				//res = disk_write(drv, ptr, lba, 1280);
-				res = disk_write(drv, ptr, lba, 320);
+				res = disk_write(drv, ptr, lba, 1280);
+				//res = disk_write(drv, ptr, lba, 320);
 
 				if (res == FR_OK)
 				{ /* Write data to the file */
