@@ -80,24 +80,11 @@ module ecp5demo (
 `ifdef SIM	
 	assign clk = clk_input;
 `else
-    //OSC_TOP osc(clk);
-	wire clk_tmp;
-	
-	//assign clk = clk_input;
+	/* 48MHz */ 
 	pll _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
-	/*
-	DCSC DCSInst0 (
-		.CLK0(clk_tmp),
-		.CLK1(clk_tmp),
-		.SEL0(1'b1),
-		.SEL1(1'b0),
-		.MODESEL(1'b0),
-		.DCSOUT(clk)
-	);
-	defparam DCSInst0.DCSMODE = "POS";
-	*/
+	
+	/* 6MHz */ 
 	//pll _inst (.CLKI(clk_input), .CLKOS2(clk), .CLKOS3(clk_90), .LOCK(pll_lock));
-	//mainPLL _inst (.CLKI(clk_input), .CLKOP(clk_90), .CLKOS(clk), .LOCK(pll_lock));
 `endif
 	
 
@@ -122,7 +109,6 @@ module ecp5demo (
 
 	wire trap;
 
-
 	reg [19:0] cmos_reset_cnt = 0;
 	wire cmos_resetn = &cmos_reset_cnt;
 
@@ -133,7 +119,6 @@ module ecp5demo (
 
 
 	`include "wb_intercon/intercon_gen.vh"
-
 
 	assign wb_s2m_ram0_err = 1'b0;
 	assign wb_s2m_ram0_rty = 1'b0;
@@ -147,7 +132,6 @@ module ecp5demo (
 	assign wb_s2m_gpio0_rty = 1'b0;
 	assign wb_s2m_sdc_slave_err = 1'b0;
 	assign wb_s2m_sdc_slave_rty = 1'b0;
-
 
 	wire flash_io0_oe, flash_io0_do, flash_io0_di;
 	wire flash_io1_oe, flash_io1_do, flash_io1_di;
@@ -168,8 +152,7 @@ module ecp5demo (
 	);
 
 
-// CMOS interface
-
+	// CMOS interface
 	wire [15:0] cmos_data_in;
 	wire cmos_clk_in;
 	wire cmos_vsync_in;
@@ -200,8 +183,6 @@ module ecp5demo (
 		.I(BOSON_CLK),
 		.O(cmos_clk_in)
 	);
-	
-	
 
 	wire [15:0] gpio_reg;
 	
@@ -226,18 +207,13 @@ module ecp5demo (
 		.o_int     ()
 	);
 		
-
-	//wire trap;
-	//assign led = trap;
+	/* Used for the bootloader to reset the FPGA and force re-config */
 	assign fpga_reset = 1'b1;
-	//assign led = wb_m2s_picorv32_cyc;
+	
 	assign led = gpio_reg[0];
-	//assign led = flash_clk;
 	
 	assign ser_tx_dir = 1;
 	assign ser_rx_dir = 0;
-	
-
 	
 	
 	/* RISCV CPU */
@@ -285,27 +261,27 @@ module ecp5demo (
 	reg dat_out_oe;
 	always @(negedge sd_clk_pad_o)
 		dat_out_oe <= !sd_dat_oe;
-//	BBPU sdmmc_io_buf[3:0] (
-//		.B(SDMMC_DATA),
-//		.T(dat_out_oe),
-//		.I(dat_out_ff),
-//		.O(sd_dat_in)
-//	);
+	BBPU sdmmc_io_buf[3:0] (
+		.B(SDMMC_DATA),
+		.T(dat_out_oe),
+		.I(dat_out_ff),
+		.O(sd_dat_in)
+	);
 	
 	reg cmd_out_ff;
 	always @(negedge sd_clk_pad_o)
 		cmd_out_ff <= sd_cmd_out;
-//	BBPU sdmmc_cmd_buf (
-//		.B(SDMMC_CMD),
-//		.T(!sd_cmd_oe),
-//		.I(cmd_out_ff),
-//		.O(sd_cmd_in)
-//	);
+	BBPU sdmmc_cmd_buf (
+		.B(SDMMC_CMD),
+		.T(!sd_cmd_oe),
+		.I(cmd_out_ff),
+		.O(sd_cmd_in)
+	);
 	
-//	OB sdmmc_ck_buf (
-//		.O(SDMMC_CK),
-//		.I(sd_clk_pad_o)
-//	);
+	OB sdmmc_ck_buf (
+		.O(SDMMC_CK),
+		.I(sd_clk_pad_o)
+	);
 	
 
 
@@ -347,76 +323,74 @@ module ecp5demo (
 	
 
 
-wire hb_clk_o;
-wire hb_clk_n_o;
-wire hb_cs_o;
-wire hb_rwds_o;
-wire hb_rwds_i;
-wire hb_rwds_dir;
-wire [7:0] hb_dq_o;
-wire [7:0] hb_dq_i;
-wire hb_dq_dir;
-wire hb_rst_o;
+	wire hb_clk_o;
+	wire hb_clk_n_o;
+	wire hb_cs_o;
+	wire hb_rwds_o;
+	wire hb_rwds_i;
+	wire hb_rwds_dir;
+	wire [7:0] hb_dq_o;
+	wire [7:0] hb_dq_i;
+	wire hb_dq_dir;
+	wire hb_rst_o;
 
-wire [31:0] sump_dbg;
-
-
-
-wire hb_rwds_del_i;
-wire [7:0] hb_dq_del_i;
+	wire [31:0] sump_dbg;
 
 
-	wb_hyper wb_hyper (
-	.wb_clk_i     (wb_clk),
-	.wb_rst_i     (wb_rst),
-	.clk90        (clk_90),
-	.wb_dat_i     (wb_m2s_hram0_dat),
-	.wb_adr_i     ({8'b0,wb_m2s_hram0_adr[23:0]}),
-	.wb_sel_i     (wb_m2s_hram0_sel),
-	.wb_cti_i     (wb_m2s_hram0_cti),
-	.wb_we_i      (wb_m2s_hram0_we),
-	.wb_cyc_i     (wb_m2s_hram0_cyc),
-	.wb_stb_i     (wb_m2s_hram0_stb),
-	.wb_dat_o     (wb_s2m_hram0_dat),
-	.wb_ack_o     (wb_s2m_hram0_ack),
-	.wb_cfg_dat_i (wb_m2s_hram0_cfg_dat),
-	.wb_cfg_dat_o (wb_s2m_hram0_cfg_dat),
-	.wb_cfg_adr_i ({24'b0,wb_m2s_hram0_cfg_adr[7:0]}),
-	.wb_cfg_sel_i (wb_m2s_hram0_cfg_sel),
-	.wb_cfg_we_i  (wb_m2s_hram0_cfg_we),
-	.wb_cfg_cyc_i (wb_m2s_hram0_cfg_cyc),
-	.wb_cfg_stb_i (wb_m2s_hram0_cfg_stb),
-	.wb_cfg_ack_o (wb_s2m_hram0_cfg_ack),
-	.hb_clk_o     (hb_clk_o            ),
-	.hb_clk_n_o   (hb_clk_n_o            ),
-	.hb_cs_o      (hb_cs_o             ),
-	.hb_rwds_o    (hb_rwds_o           ),
-	.hb_rwds_i    (hb_rwds_del_i           ),
-	.hb_rwds_dir  (hb_rwds_dir         ),
-	.hb_dq_o      (hb_dq_o             ),
-	.hb_dq_i      (hb_dq_del_i             ),
-	.hb_dq_dir    (hb_dq_dir           ),//,
-	.hb_rst_o     (hb_rst_o            ),
-	.sump_dbg(sump_dbg)
-);
 
-	//assign hb_clk_n_o = !hb_clk_o;
+	wire hb_rwds_del_i;
+	wire [7:0] hb_dq_del_i;
 
-	
-	
-DELAYG  #(
-	.DEL_MODE("SCLK_CENTERED")
-) rwds_delay (
-	.A(hb_rwds_i), /* Input */
-	.Z(hb_rwds_del_i)
-);
 
-DELAYG  #(
-	.DEL_MODE("SCLK_CENTERED")
-) dq_delay [7:0] (
-	.A(hb_dq_i), /* Input */
-	.Z(hb_dq_del_i)
-);
+		wb_hyper wb_hyper (
+		.wb_clk_i     (wb_clk),
+		.wb_rst_i     (wb_rst),
+		.clk90        (clk_90),
+		.wb_dat_i     (wb_m2s_hram0_dat),
+		.wb_adr_i     ({8'b0,wb_m2s_hram0_adr[23:0]}),
+		.wb_sel_i     (wb_m2s_hram0_sel),
+		.wb_cti_i     (wb_m2s_hram0_cti),
+		.wb_we_i      (wb_m2s_hram0_we),
+		.wb_cyc_i     (wb_m2s_hram0_cyc),
+		.wb_stb_i     (wb_m2s_hram0_stb),
+		.wb_dat_o     (wb_s2m_hram0_dat),
+		.wb_ack_o     (wb_s2m_hram0_ack),
+		.wb_cfg_dat_i (wb_m2s_hram0_cfg_dat),
+		.wb_cfg_dat_o (wb_s2m_hram0_cfg_dat),
+		.wb_cfg_adr_i ({24'b0,wb_m2s_hram0_cfg_adr[7:0]}),
+		.wb_cfg_sel_i (wb_m2s_hram0_cfg_sel),
+		.wb_cfg_we_i  (wb_m2s_hram0_cfg_we),
+		.wb_cfg_cyc_i (wb_m2s_hram0_cfg_cyc),
+		.wb_cfg_stb_i (wb_m2s_hram0_cfg_stb),
+		.wb_cfg_ack_o (wb_s2m_hram0_cfg_ack),
+		.hb_clk_o     (hb_clk_o            ),
+		.hb_clk_n_o   (hb_clk_n_o          ),
+		.hb_cs_o      (hb_cs_o             ),
+		.hb_rwds_o    (hb_rwds_o           ),
+		.hb_rwds_i    (hb_rwds_del_i       ),
+		.hb_rwds_dir  (hb_rwds_dir         ),
+		.hb_dq_o      (hb_dq_o             ),
+		.hb_dq_i      (hb_dq_del_i         ),
+		.hb_dq_dir    (hb_dq_dir           ),
+		.hb_rst_o     (hb_rst_o            ),
+		.sump_dbg     (sump_dbg            )
+	);
+
+		
+		
+	DELAYG  #(
+		.DEL_MODE("SCLK_CENTERED")
+	) rwds_delay (
+		.A(hb_rwds_i), /* Input */
+		.Z(hb_rwds_del_i)
+	);
+
+	DELAYG  #(
+		.DEL_MODE("SCLK_CENTERED")
+	) dq_delay [7:0] (
+		.A(hb_dq_i), /* Input */
+		.Z(hb_dq_del_i)
+	);
 
 	BBPU hr_dq_b[7:0] (
 		.B(HRAM_DQ),
@@ -452,14 +426,6 @@ DELAYG  #(
 		.O(HRAM_CS),
 		.I(hb_cs_o)
 	);
-
-	
-	wire rwds_del, dq_del;
-	
-
-	//assign SDMMC_CK = hb_clk_o;
-	//assign SDMMC_CMD = hb_rwds_del_i;
-	//assign SDMMC_DATA[0] = hb_dq_del_i[5];
 	
 	spimemio_wb flash0
 	(
@@ -687,12 +653,12 @@ DELAYG  #(
 	
 	
 	/* SUMP2 Embedded Logic Analyser */
-	//sump2_top sump2_top0(
-	//	.clk        (wb_clk),
-	//	.serial_rx_i(ser_rx),
-	//	.serial_tx_o(ser_tx),
-	//	.events_i   (sump_dbg)
-	//);
+	sump2_top sump2_top0(
+		.clk        (wb_clk),
+		.serial_rx_i(ser_rx),
+		.serial_tx_o(ser_tx),
+		.events_i   (sump_dbg)
+	);
 	
 	
 
