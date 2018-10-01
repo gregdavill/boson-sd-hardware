@@ -838,15 +838,21 @@ void test_ccc()
 
 void HRAM_write_test_good()
 {
-	uint32_t *ptr = (uint32_t *)0x04000000;
+	static uint32_t counter;
 
-	for (int i = 0; i < 2048; i++)
-	{
-		*ptr++ = i;
-	}
+	*((uint32_t *)0x04000000) = 0x12345678;
+	*((uint32_t *)0x04000004) = 0xAAAAAAAA;
+	*((uint32_t *)0x04000008) = 0x55555555;
+	*((uint32_t *)0x0400000C) = 0x01020408;
+
+	counter = *((uint32_t *)0x04000000);
+	counter = *((uint32_t *)0x04000004);
+	counter = *((uint32_t *)0x04000008);
+	counter = *((uint32_t *)0x0400000C);
+	
+	dump(0x04000000, 0);
 }
 
-#define HRAM0 (*(volatile uint32_t *)(0x04000000))
 
 void HRAM_write_test_bad()
 {
@@ -946,8 +952,8 @@ void continuousCapture()
 		/* Capture our image length into external hyperRAM */
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
 		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
-		//CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
-		CCC_STREAM_BUF_SIZE = 640 * 512 * 2;
+		CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
+		//CCC_STREAM_BUF_SIZE = 640 * 512 * 2;
 		CCC_STREAM_BURST_SIZE = 16;
 
 		/* Enable the Stream DMA */
@@ -975,7 +981,8 @@ void continuousCapture()
 			uint8_t *ptr = 0x04000000;
 
 			/* Find and allocate a 512kb block for us */
-			if ((res = f_expand(&Fil, 640 * 512 * 2, 1)) == FR_OK)
+			//if ((res = f_expand(&Fil, 640 * 512 * 2, 1)) == FR_OK)
+			if ((res = f_expand(&Fil, 320 * 256 * 2, 1)) == FR_OK)
 			{
 				/* Accessing the contiguous file via low-level disk functions */
 
@@ -984,7 +991,8 @@ void continuousCapture()
 				DWORD lba = Fil.obj.fs->database + Fil.obj.fs->csize * (Fil.obj.sclust - 2);
 
 				/* Write 2048 sectors from top of the file at a time */
-				res = disk_write(drv, ptr, lba, 1280);
+				//res = disk_write(drv, ptr, lba, 1280);
+				res = disk_write(drv, ptr, lba, 320);
 
 				if (res == FR_OK)
 				{ /* Write data to the file */
@@ -1091,6 +1099,8 @@ void main()
 
 	//set_hyperram_speed();
 
+	continuousCapture();
+
 	while (getchar_prompt("Press ENTER to continue..\n") != '\r')
 	{ /* wait */
 	}
@@ -1117,6 +1127,8 @@ void main()
 		print("   [3] FATFS Write_expand\n");
 		print("   [4] Capture from Camera\n");
 		print("   [5] Continuous Capture\n");
+		print("   [6] HRAM0 test write \n");
+		
 		print("   [9] Run simplistic benchmark\n");
 		print("   [0] Benchmark all configs\n");
 		print("\n");
@@ -1149,6 +1161,7 @@ void main()
 				continuousCapture();
 				break;
 			case '6':
+				HRAM_write_test_good();
 				break;
 			case '7':
 				reg_spictrl = reg_spictrl ^ 0x00100000;
