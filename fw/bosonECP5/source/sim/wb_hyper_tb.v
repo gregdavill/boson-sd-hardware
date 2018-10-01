@@ -97,9 +97,9 @@ wb_bfm_master #(
 
 		repeat (2) @(posedge wb_clk);
 
-		bfm_cfg.write(4'h0,8'h04,4'hF, err);
-		bfm_cfg.write(4'h4,8'h0a,4'hF, err);	
-		bfm_cfg.write(4'h8,32'h8fe4_0000,4'hF, err);
+	//	bfm_cfg.write(4'h0,8'h04,4'hF, err);
+	//	bfm_cfg.write(4'h4,8'h0a,4'hF, err);	
+	//	bfm_cfg.write(4'h8,32'h8fe4_0000,4'hF, err);
 		
 		#1000
 		//bfm_cfg.read(4'h0,data, err);
@@ -107,9 +107,13 @@ wb_bfm_master #(
 		//bfm_cfg.read(4'h8,data, err);
 
 		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
-		#100
+		#350
 		bfm.read(32'h0000_0000, data, err);	
-		#1000
+		#500
+		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
+		#500 
+		bfm.read(32'h0000_0000, data, err);	
+		#500
 
 
 		bfm.write_data[0] = 32'h01020304;

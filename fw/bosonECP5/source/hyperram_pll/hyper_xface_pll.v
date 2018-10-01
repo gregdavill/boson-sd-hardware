@@ -192,6 +192,8 @@ module hyper_xface_pll
   reg          cs_loc;
   reg          cs_l_reg;
   reg          cs_l_reg_p1;
+  reg          cs_l_reg_p2;
+  reg          cs_l_reg_p3;
   wire         dram_ck_loc;
   reg          dram_ck_en;
   reg          rd_done;
@@ -219,10 +221,17 @@ module hyper_xface_pll
   reg          rd_dir_jk_p2;
   reg          rd_dir_jk_p3;
   reg          rd_dir_jk_p4;
+  reg          rd_dir_jk_p5;
   reg          ck_div2;
   reg  [31:0]  sump_loc;
   reg  [31:0]  sump_loc_p1;
   reg  [31:0]  sump_loc_p2;
+
+  reg          dq_oe_l_f;
+  reg          dq_oe_l_ff;
+  reg 		   rwds_oe_l;
+  reg 		   rwds_oe_l_f;
+  reg 		   rwds_oe_l_ff;
 
 // Specific to simulation model. Note arbitrary size limit of 1K DWORDs
   reg  [31:0]             sim_ram_array[1023:0];
@@ -301,7 +310,7 @@ always @ ( posedge clk ) begin : proc_latency_timing
      end
    end
    if ( reset == 1 ) begin 
-     latency_cfg <= 16'h0A07;// HyperRAM power on default
+     latency_cfg <= 16'h0D0A;// HyperRAM power on default
    end 
  end
 end // always
@@ -399,6 +408,7 @@ always @ ( posedge clk ) begin : proc_fsm
    rd_dir_jk_p2  <= rd_dir_jk_p1;
    rd_dir_jk_p3  <= rd_dir_jk_p2;
    rd_dir_jk_p4  <= rd_dir_jk_p3;
+   rd_dir_jk_p5  <= rd_dir_jk_p4;
    busy_jk_p1    <= busy_jk;
 
    dout_word[15:0] <= 16'b0;
@@ -414,13 +424,13 @@ always @ ( posedge clk ) begin : proc_fsm
        busy_jk        <= 0;
        rd_done        <= 1;
        rd_dir_jk      <= 0;
-       dram_rwds_oe_l <= 1;// Input
+       rwds_oe_l <= 1;// Input
      end
    end
 
    if ( busy_jk == 0 && ( wr_req == 1 || rd_req == 1 ) ) begin
      rd_dir_jk      <= 0;
-     dram_rwds_oe_l <= 1;// Input
+     rwds_oe_l <= 1;// Input
      busy_jk        <= 1;
      go_sr[0]       <= 1;// Kick off the FSM
      rw_bit         <= rd_req;     // 0=WriteOp, 1=ReadOp
@@ -460,7 +470,7 @@ always @ ( posedge clk ) begin : proc_fsm
 
    if ( go_sr[6] == 1 ) begin
      if ( rw_bit == 0 ) begin
-       dram_rwds_oe_l <= 0;// Output for Write Operations
+       rwds_oe_l <= 0;// Output for Write Operations
      end
    end
 
@@ -493,7 +503,7 @@ always @ ( posedge clk ) begin : proc_fsm
    end
 
    if ( busy_jk_p1 == 0 ) begin
-     dram_rwds_oe_l <= 1;// Back to input  
+     rwds_oe_l <= 1;// Back to input  
      rd_dir_jk      <= 0;//                
    end
 
@@ -542,7 +552,7 @@ always @ ( posedge clk ) begin : proc_latency
 
    // DRAM Writes 1x Latency ( assume for now )
    if ( go_sr[2] == 1 && reg_bit == 0 && rw_bit == 0 ) begin
-     fsm_wait <= latency_1x[5:0];
+     fsm_wait <= latency_2x[5:0];
    end
 
    // DRAM Writes 2x Latency if RWDS sampled high on 5th clock
@@ -592,7 +602,7 @@ always @ ( posedge clk ) begin : proc_rd_sr
    dram_dq_in_ris_p1   <= dram_dq_in_ris[7:0];
    dram_dq_in_fal_p1   <= dram_dq_in_fal[7:0];
    if ( rd_burst_en_sr | rd_first_byte ) begin
-     if ( ( dram_rwds_in_fal == 1 || simulation_en == 1 ) 
+     if ( ( ( dram_rwds_in_fal_p1 == 1 && dram_rwds_in_ris_p1 == 0) || simulation_en == 1 ) 
           && rd_dir_jk_p4 == 1 ) begin
        rd_word_cnt <= ~ rd_word_cnt;
        if ( rd_word_cnt == 1 ) begin
@@ -609,6 +619,12 @@ always @ ( posedge clk ) begin : proc_rd_sr
    end else begin
      rd_word_cnt   <= 0; // A ping pong
    end
+   
+   /* Timout */
+   if(rw_bit == 1 && reg_bit == 0 && fsm_wait == 0) begin
+	//rd_rdy <= 1;
+   end
+   
  end
 end // proc_rd_sr
 
@@ -624,9 +640,20 @@ always @ ( posedge clk ) begin : proc_out
    dram_rwds_out   <= ~ byte_wr_en;// Note: rwds is a mask, 1==Don't Write Byte
    cs_l_reg        <= ( ~cs_loc ) | halt_burst;
    cs_l_reg_p1     <= cs_l_reg;
+   cs_l_reg_p2     <= cs_l_reg_p1;
+   cs_l_reg_p3     <= cs_l_reg_p2;
    dq_oe_l         <= ( ~cs_loc ) | halt_burst | rd_dir_jk;
-   dram_ck_en      <= ~ cs_l_reg;
-   dram_dq_oe_l    <= dq_oe_l;
+  // dram_ck_en      <= ~cs_l_reg;
+
+   dq_oe_l_f       <= dq_oe_l;
+   dq_oe_l_ff      <= dq_oe_l_f;
+   dram_dq_oe_l    <= dq_oe_l_ff;
+
+   rwds_oe_l_f <= rwds_oe_l;
+   dram_rwds_oe_l <= rwds_oe_l_f;
+   
+
+   
    ck_div2         <= ~ ck_div2;         // Just a visual aid for SUMP2
    sump_loc_p1     <= sump_loc[31:0];    // Align internal with IDDR signals
    sump_loc_p2     <= sump_loc_p1[31:0]; // Align internal with IDDR signals
@@ -642,7 +669,7 @@ always @ ( posedge clk ) begin : proc_out
    sump_loc[7]     <= lat_2x;
 
    sump_loc[8 ]    <= ~cs_l_reg;
-   sump_loc[9 ]    <= ~dram_rwds_oe_l;
+   sump_loc[9 ]    <= ~rwds_oe_l;
    sump_loc[10]    <= ~dq_oe_l;
    sump_loc[11]    <= rd_dir_jk;
    sump_loc[12]    <= data_shift_en;
@@ -673,10 +700,8 @@ end // proc_out
   assign sump_dbg[13:9]  = sump_loc_p1[13:9]; // Internal
 
 
-reg cs_l_ff;
 
-always @(posedge clk)
-	cs_l_ff <= cs_l_reg;
+
 
 
 //-----------------------------------------------------------------------------
@@ -693,8 +718,9 @@ for ( i2=0; i2<=7; i2=i2+1 ) begin: gen_i2
   (
     .clk       ( clk                 ),
     .din       ( dram_dq_in[i2]      ),
-    .dout_ris  ( dram_dq_in_ris[i2]  ),
-    .dout_fal  ( dram_dq_in_fal[i2]  )
+    .dout_fal  ( dram_dq_in_ris[i2]  ),
+    .dout_ris  ( dram_dq_in_fal[i2]  ),
+  .rst       (reset )
   );
 end
 endgenerate
@@ -702,8 +728,9 @@ endgenerate
   (
     .clk       ( clk                 ),
     .din       ( dram_rwds_in        ),
-    .dout_ris  ( dram_rwds_in_ris    ),
-    .dout_fal  ( dram_rwds_in_fal    )
+    .dout_fal  ( dram_rwds_in_ris    ),
+    .dout_ris  ( dram_rwds_in_fal    ),
+  .rst       (reset )
   );
 
 
@@ -718,7 +745,8 @@ for ( i1=0; i1<=7; i1=i1+1 ) begin: gen_i1
     .clk       ( clk                 ),
     .din_ris   ( dram_dq_out_ris[i1] ),
     .din_fal   ( dram_dq_out_fal[i1] ),
-    .dout      ( dram_dq_out[i1]     )
+    .dout      ( dram_dq_out[i1]     ),
+  .rst       (reset )
   );
 end
 endgenerate
@@ -728,23 +756,36 @@ ecp_oddr u0_xil_oddr
   .clk       ( clk                 ),
   .din_ris   ( cs_l_reg  ),
   .din_fal   ( cs_l_reg  ),
-  .dout      ( dram_cs_l           )
+  .dout      ( dram_cs_l           ),
+  .rst       (reset )
 );
+
+
+
+always @(negedge clk) begin
+	dram_ck_en <= ~cs_l_reg;
+end
+
+
 ecp_oddr u1_xil_oddr
 (
   .clk       ( dram_ck_loc         ),
-  .din_ris   ( dram_ck_en          ),
-  .din_fal   ( 1'b0                   ),
-  .dout      ( dram_ck             )
+  .din_ris   ( 1'b1    ),
+  .din_fal   ( 1'b0                ),
+  .dout      ( dram_ck             ),
+  .rst       (reset                )
 );
+
+
 ecp_oddr u2_xil_oddr
 (
-  .clk       ( dram_ck_loc         ),
-  .din_ris   ( ~dram_ck_en          ),
-  .din_fal   ( 1'b0                   ),
-  .dout      ( dram_ck_n             )
+  .clk       ( dram_ck_loc          ),
+  .din_ris   ( 1'b0    ),
+  .din_fal   ( 1'b1                 ),
+  .dout      ( dram_ck_n            ),
+  .rst       (reset                 )
 );
-//assign #2 dram_ck_loc = clk;// Simulation Only - delay 10ns Sim clock by 2ns
-  assign    dram_ck_loc = clk_90p;// PLL 90o shifted
+//assign #3 dram_ck_loc = clk;// Simulation Only - delay 10ns Sim clock by 2ns
+assign    dram_ck_loc = clk_90p;// PLL 90o shifted
 
 endmodule // hyper_xface.v

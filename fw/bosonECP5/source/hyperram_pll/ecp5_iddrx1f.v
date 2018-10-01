@@ -28,9 +28,15 @@ module ecp_iddr
   input  wire  clk,
   input  wire  din,
   output wire  dout_ris,
-  output wire  dout_fal
+  output wire  dout_fal,
+  input wire rst
 );// 
 
+
+//wire dout_fal_f;
+
+//always @(posedge clk)
+//	dout_fal <= dout_fal_f;
 
 
 // IDDR1XF: Generic X1 IDDR implementation
@@ -41,7 +47,7 @@ IDDRX1F IDDRX1F_inst
   .Q1    ( dout_fal ), // 1-bit output for negative edge of clock
   .SCLK  ( clk      ), // 1-bit clock input
   .D     ( din      ), // 1-bit DDR data input
-  .RST   ( 1'b0     )  // 1-bit reset
+  .RST   ( rst     )  // 1-bit reset
 );
 // End of IDDR1XF_inst instantiation
 

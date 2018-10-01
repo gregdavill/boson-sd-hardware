@@ -35,7 +35,7 @@ module wb_hyper (
 	output wire        hb_dq_dir,
 	output wire        hb_rst_o,
 	// Debug 
-	output wire [7:0]  sump_dbg
+	output wire [31:0]  sump_dbg
 );
 
 

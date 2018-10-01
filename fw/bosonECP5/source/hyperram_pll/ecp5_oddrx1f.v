@@ -28,7 +28,8 @@ module ecp_oddr
   input  wire  clk,
   input  wire  din_ris,
   input  wire  din_fal,
-  output wire  dout
+  output wire  dout,
+  input wire rst
 );// 
 
 
@@ -49,7 +50,7 @@ ODDRX1F ODDRX1F_inst
   .SCLK ( clk     ),  // 1-bit clock input
   .D0   ( din_ris ),  // 1-bit data input (positive edge)
   .D1   ( din_fal ),  // 1-bit data input (negative edge)
-  .RST  ( 1'b0    )   // 1-bit reset
+  .RST  ( rst    )   // 1-bit reset
 );
 // End of ODDR1XF_inst instantiation
 

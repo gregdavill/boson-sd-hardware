@@ -18,7 +18,7 @@
 				<BScanVal>0</BScanVal>
 			</Bypass>
 			<File>C:/Users/gregd/Documents/git/bosonFrameGrabber/fw/bosonECP5/impl1/bosonECP5_impl1.bit</File>
-			<FileTime>09/05/18 21:53:37</FileTime>
+			<FileTime>09/28/18 21:26:10</FileTime>
 			<Operation>SPI Flash Erase,Program,Verify</Operation>
 			<Option>
 				<SVFVendor>JTAG STANDARD</SVFVendor>
@@ -63,7 +63,7 @@
 					<AddressBase>0x00000000</AddressBase>
 					<EndAddress>0x00080000</EndAddress>
 					<DeviceSize>8</DeviceSize>
-					<DataSize>239055</DataSize>
+					<DataSize>582675</DataSize>
 					<NumberOfDevices>1</NumberOfDevices>
 					<ReInitialize value="FALSE"/>
 				</Device>

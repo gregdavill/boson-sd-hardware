@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <BaliProject version="3.2" title="bosonECP5" device="LFE5U-25F-6MG285C" default_implementation="impl1">
     <Options/>
-    <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="LSE">
+    <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="Strategy1">
         <Options def_top="OSC_TOP" top="ecp5demo"/>
         <Source name="source/ecp5demo.v" type="Verilog" type_short="Verilog">
             <Options top_module="ecp5demo"/>
@@ -180,19 +180,19 @@
         <Source name="source/hyperram/hyper_xface.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/hyperram/wb_hyper.v" type="Verilog" type_short="Verilog">
+        <Source name="source/hyperram/wb_hyper.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
-        <Source name="source/hyperram_pll/wb_hyper_pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/hyperram_pll/wb_hyper_pll.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/hyperram_pll/ecp5_oddrx1f.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/hyperram_pll/ecp5_oddrx1f.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/hyperram_pll/ecp5_iddrx1f.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/hyperram_pll/ecp5_iddrx1f.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/hyperram_pll/hyper_xface_pll.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/hyperram_pll/hyper_xface_pll.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="source/wb_streamer/wb_stream_writer_fifo.v" type="Verilog" type_short="Verilog">
@@ -274,6 +274,9 @@
             <Options/>
         </Source>
         <Source name="rtl_sim/rtl_sim.spf" type="Simulation Project File" type_short="SPF">
+            <Options/>
+        </Source>
+        <Source name="sim_hyperram/sim_hyperram.spf" type="Simulation Project File" type_short="SPF">
             <Options/>
         </Source>
         <Source name="sim_test/sim_test.spf" type="Simulation Project File" type_short="SPF">
