@@ -18,10 +18,8 @@ _autosave-*
 
 # Exported BOM files
 *.xml
-*.csv
+# *.csv
 
-output
-outputs
 
 # Add Lattice Diamond ignores
 impl1
@@ -40,8 +38,8 @@ archiv
 *.cmd
 *.cst
 *.fdc
-*.htm
-*.html
+# *.htm
+# *.html
 *.log
 *.ngd
 *.ngo
@@ -50,5 +48,5 @@ archiv
 *.trc
 *.vhm
 *.xml
-*.zip
+# *.zip
 *~
