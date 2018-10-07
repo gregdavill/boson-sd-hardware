@@ -267,6 +267,9 @@
         <Source name="source/sim/models/boson_sim.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
             <Options/>
         </Source>
+        <Source name="source/reset_reg.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>

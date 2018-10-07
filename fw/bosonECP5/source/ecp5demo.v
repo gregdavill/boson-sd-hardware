@@ -208,12 +208,29 @@ module ecp5demo (
 	);
 		
 	/* Used for the bootloader to reset the FPGA and force re-config */
-	assign fpga_reset = 1'b1;
+	assign fpga_reset = 1'b1;//~(sw_fpga_reset & ~wb_rst);
 	
 	assign led = gpio_reg[0];
 	
 	assign ser_tx_dir = 1;
 	assign ser_rx_dir = 0;
+	
+	wire sw_fpga_reset;
+	
+	wb_reset_reg reset_reg0 (
+		.wb_clk_i (wb_clk),
+		.wb_rst_i (wb_rst),
+		//Wishbone IF
+		.wb_adr_i (wb_m2s_reset0_adr),
+		.wb_dat_i (wb_m2s_reset0_dat),
+		.wb_sel_i(wb_m2s_reset0_sel),
+		.wb_we_i (wb_m2s_reset0_we),
+		.wb_cyc_i(wb_m2s_reset0_cyc),
+		.wb_stb_i(wb_m2s_reset0_stb),
+		.wb_dat_o(wb_s2m_reset0_dat),
+		.wb_ack_o(wb_s2m_reset0_ack),
+		.reset_out(sw_fpga_reset)
+	);
 	
 	
 	/* RISCV CPU */
@@ -653,12 +670,12 @@ module ecp5demo (
 	
 	
 	/* SUMP2 Embedded Logic Analyser */
-	sump2_top sump2_top0(
-		.clk        (wb_clk),
-		.serial_rx_i(ser_rx),
-		.serial_tx_o(ser_tx),
-		.events_i   (sump_dbg)
-	);
+	//sump2_top sump2_top0(
+	//	.clk        (wb_clk),
+	//	.serial_rx_i(ser_rx),
+	//	.serial_tx_o(ser_tx),
+	//	.events_i   (sump_dbg)
+	//);
 	
 	
 

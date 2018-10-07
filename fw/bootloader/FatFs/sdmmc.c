@@ -489,7 +489,7 @@ DRESULT disk_write(
 	}
 
 	/* Tell SDC DMA about out data */
-	SDC_DST_SRC_ADDRESS = buff;
+	SDC_DST_SRC_ADDRESS = (uint32_t)buff;
 	SDC_BLOCKCOUNT = count - 1;
 	SDC_BLOCKSIZE = 0x1FF;
 	SDC_DATA_EVENT_ENABLE = 0x1F;
