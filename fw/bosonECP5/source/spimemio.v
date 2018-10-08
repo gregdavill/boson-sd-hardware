@@ -17,35 +17,43 @@
  *
  */
 
+`default_nettype none
+
 module spimemio (
-	input clk, resetn,
+	input          wire wb_clk_i,
+    input          wire wb_rst_i,
+	input    wire [31:0] wb_adr_i,
+    input          wire wb_cyc_i,
+    input          wire wb_stb_i,
+    output  reg [31:0]  wb_dat_o,
+    output         wire wb_ack_o,
+	
+    input   wire [31:0] wb_spi_conf_dat_i,
+    input    wire [2:0] wb_spi_conf_adr_i,
+    input    wire [3:0] wb_spi_conf_sel_i,
+    input         wire wb_spi_conf_we_i,
+    input         wire wb_spi_conf_cyc_i,
+    input         wire wb_spi_conf_stb_i,
+    output reg [31:0] wb_spi_conf_dat_o,
+    output        reg wb_spi_conf_ack_o,
+	
+	output wire flash_csb,
+	output wire flash_clk,
 
-	input valid,
-	output ready,
-	input [23:0] addr,
-	output reg [31:0] rdata,
+	output wire flash_io0_oe,
+	output wire flash_io1_oe,
+	output wire flash_io2_oe,
+	output wire flash_io3_oe,
 
-	output flash_csb,
-	output flash_clk,
+	output wire flash_io0_do,
+	output wire flash_io1_do,
+	output wire flash_io2_do,
+	output wire flash_io3_do,
 
-	output flash_io0_oe,
-	output flash_io1_oe,
-	output flash_io2_oe,
-	output flash_io3_oe,
-
-	output flash_io0_do,
-	output flash_io1_do,
-	output flash_io2_do,
-	output flash_io3_do,
-
-	input  flash_io0_di,
-	input  flash_io1_di,
-	input  flash_io2_di,
-	input  flash_io3_di,
-
-	input   [3:0] cfgreg_we,
-	input  [31:0] cfgreg_di,
-	output [31:0] cfgreg_do
+	input  wire flash_io0_di,
+	input  wire flash_io1_di,
+	input  wire flash_io2_di,
+	input  wire flash_io3_di
 );
 	reg        xfer_resetn;
 	reg        din_valid;
@@ -68,9 +76,13 @@ module spimemio (
 	reg rd_wait;
 	reg rd_inc;
 
-	assign ready = valid && (addr == rd_addr) && rd_valid;
-	wire jump = valid && !ready && (addr != rd_addr+4) && rd_valid;
+	wire ready;
+	
+	assign ready = (wb_stb_i && wb_cyc_i) && (wb_adr_i == rd_addr) && rd_valid;
+	wire jump = (wb_stb_i && wb_cyc_i) && !ready && (wb_adr_i != rd_addr+4) && rd_valid;
 
+	assign wb_ack_o = ready;
+	
 	reg softreset;
 
 	reg       config_en;      // cfgreg[31]
@@ -82,6 +94,8 @@ module spimemio (
 	reg       config_csb;     // cfgreg[5]
 	reg       config_clk;     // cfgref[4]
 	reg [3:0] config_do;      // cfgreg[3:0]
+
+	wire [31:0] cfgreg_do;
 
 	assign cfgreg_do[31] = config_en;
 	assign cfgreg_do[30:23] = 0;
@@ -96,9 +110,61 @@ module spimemio (
 	assign cfgreg_do[4] = flash_clk;
 	assign cfgreg_do[3:0] = {flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di};
 
-	always @(posedge clk) begin
-		softreset <= !config_en || cfgreg_we;
-		if (!resetn) begin
+	/* SPI writes */
+	reg [31:0] config_data;
+	reg [4:0] config_count;
+
+
+	/* Config handling */
+	always @(posedge wb_clk_i) begin
+		softreset <= !config_en || (wb_spi_conf_cyc_i && wb_spi_conf_stb_i);
+		
+		wb_spi_conf_ack_o <= 1'b0;
+
+		if(wb_spi_conf_cyc_i && wb_spi_conf_stb_i && !wb_spi_conf_ack_o && (config_count == 0)) begin
+			if(wb_spi_conf_adr_i[2] == 0) begin
+				wb_spi_conf_ack_o <= 1'b1;
+				wb_spi_conf_dat_o <= cfgreg_do;
+				if(wb_spi_conf_we_i) begin
+					if (wb_spi_conf_sel_i[0]) begin
+						config_csb <= wb_spi_conf_dat_i[5];
+						config_clk <= wb_spi_conf_dat_i[4];
+						config_do <= wb_spi_conf_dat_i[3:0];
+					end
+					if (wb_spi_conf_sel_i[1]) begin
+						config_oe <= wb_spi_conf_dat_i[11:8];
+					end
+					if (wb_spi_conf_sel_i[2]) begin
+						config_ddr <= wb_spi_conf_dat_i[22];
+						config_qspi <= wb_spi_conf_dat_i[21];
+						config_cont <= wb_spi_conf_dat_i[20];
+						config_dummy <= wb_spi_conf_dat_i[19:16];
+					end
+					if (wb_spi_conf_sel_i[3]) begin
+						config_en <= wb_spi_conf_dat_i[31];
+					end
+				end
+			end else if(wb_spi_conf_adr_i[2] == 1) begin
+				if(wb_spi_conf_we_i) begin
+					config_data <= wb_spi_conf_dat_i[7:0];
+					config_count <= 16;
+				end
+				wb_spi_conf_ack_o <= 1'b1;
+			end
+		end
+
+		/* hardware bit-bang? */
+		if(config_count > 0) begin
+			if(config_count[0] == 0)
+				config_data <= {config_data[6:0], 1'b0};
+
+			config_clk <= config_count[0];
+			config_do[0] <= config_data[8];
+
+			config_count <= config_count - 5'b1;
+		end
+		
+		if (wb_rst_i) begin
 			softreset <= 1;
 			config_en <= 1;
 			config_csb <= 0;
@@ -109,25 +175,11 @@ module spimemio (
 			config_qspi <= 0;
 			config_cont <= 0;
 			config_dummy <= 8;
-		end else begin
-			if (cfgreg_we[0]) begin
-				config_csb <= cfgreg_di[5];
-				config_clk <= cfgreg_di[4];
-				config_do <= cfgreg_di[3:0];
-			end
-			if (cfgreg_we[1]) begin
-				config_oe <= cfgreg_di[11:8];
-			end
-			if (cfgreg_we[2]) begin
-				config_ddr <= cfgreg_di[22];
-				config_qspi <= cfgreg_di[21];
-				config_cont <= cfgreg_di[20];
-				config_dummy <= cfgreg_di[19:16];
-			end
-			if (cfgreg_we[3]) begin
-				config_en <= cfgreg_di[31];
-			end
-		end
+
+			config_count <= 0;
+			config_data <= 0;
+		end 
+
 	end
 
 	wire xfer_csb;
@@ -148,7 +200,7 @@ module spimemio (
 	reg xfer_io2_90;
 	reg xfer_io3_90;
 
-	always @(negedge clk) begin
+	always @(negedge wb_clk_i) begin
 		xfer_io0_90 <= xfer_io0_do;
 		xfer_io1_90 <= xfer_io1_do;
 		xfer_io2_90 <= xfer_io2_do;
@@ -172,7 +224,7 @@ module spimemio (
 	wire xfer_ddr = din_ddr && din_qspi;
 
 	spimemio_xfer xfer (
-		.clk          (clk         ),
+		.clk          (wb_clk_i         ),
 		.resetn       (xfer_resetn ),
 		.din_valid    (din_valid   ),
 		.din_ready    (din_ready   ),
@@ -204,11 +256,11 @@ module spimemio (
 
 	reg [3:0] state;
 
-	always @(posedge clk) begin
+	always @(posedge wb_clk_i) begin
 		xfer_resetn <= 1;
 		din_valid <= 0;
 
-		if (!resetn || softreset) begin
+		if (wb_rst_i || softreset) begin
 			state <= 0;
 			xfer_resetn <= 0;
 			rd_valid <= 0;
@@ -222,14 +274,14 @@ module spimemio (
 			if (dout_valid && dout_tag == 2) buffer[15: 8] <= dout_data;
 			if (dout_valid && dout_tag == 3) buffer[23:16] <= dout_data;
 			if (dout_valid && dout_tag == 4) begin
-				rdata <= {dout_data, buffer};
-				rd_addr <= rd_inc ? rd_addr + 4 : addr;
+				wb_dat_o <= {dout_data, buffer};
+				rd_addr <= rd_inc ? rd_addr + 4 : wb_adr_i;
 				rd_valid <= 1;
 				rd_wait <= rd_inc;
 				rd_inc <= 1;
 			end
 
-			if (valid)
+			if ((wb_stb_i && wb_cyc_i))
 				rd_wait <= 0;
 
 			case (state)
@@ -279,10 +331,10 @@ module spimemio (
 					end
 				end
 				5: begin
-					if (valid && !ready) begin
+					if ((wb_stb_i && wb_cyc_i) && !ready) begin
 						din_valid <= 1;
 						din_tag <= 0;
-						din_data <= addr[23:16];
+						din_data <= wb_adr_i[23:16];
 						din_qspi <= config_qspi;
 						din_ddr <= config_ddr;
 						if (din_ready) begin
@@ -294,7 +346,7 @@ module spimemio (
 				6: begin
 					din_valid <= 1;
 					din_tag <= 0;
-					din_data <= addr[15:8];
+					din_data <= wb_adr_i[15:8];
 					if (din_ready) begin
 						din_valid <= 0;
 						state <= 7;
@@ -303,7 +355,7 @@ module spimemio (
 				7: begin
 					din_valid <= 1;
 					din_tag <= 0;
-					din_data <= addr[7:0];
+					din_data <= wb_adr_i[7:0];
 					if (din_ready) begin
 						din_valid <= 0;
 						din_data <= 0;
@@ -347,7 +399,7 @@ module spimemio (
 					end
 				end
 				12: begin
-					if (!rd_wait || valid) begin
+					if (!rd_wait || (wb_stb_i && wb_cyc_i)) begin
 						din_valid <= 1;
 						din_tag <= 4;
 						if (din_ready) begin
@@ -376,21 +428,22 @@ module spimemio (
 endmodule
 
 module spimemio_xfer (
-	input clk, resetn,
+	input wire clk, 
+	input wire resetn,
 
-	input            din_valid,
-	output           din_ready,
-	input      [7:0] din_data,
-	input      [3:0] din_tag,
-	input            din_cont,
-	input            din_dspi,
-	input            din_qspi,
-	input            din_ddr,
-	input            din_rd,
+	input            wire din_valid,
+	output           wire din_ready,
+	input       wire [7:0] din_data,
+	input       wire [3:0] din_tag,
+	input            wire din_cont,
+	input            wire din_dspi,
+	input            wire din_qspi,
+	input            wire din_ddr,
+	input            wire din_rd,
 
-	output           dout_valid,
-	output     [7:0] dout_data,
-	output     [3:0] dout_tag,
+	output           wire dout_valid,
+	output      wire [7:0] dout_data,
+	output      wire [3:0] dout_tag,
 
 	output reg flash_csb,
 	output reg flash_clk,
@@ -405,10 +458,10 @@ module spimemio_xfer (
 	output reg flash_io2_do,
 	output reg flash_io3_do,
 
-	input      flash_io0_di,
-	input      flash_io1_di,
-	input      flash_io2_di,
-	input      flash_io3_di
+	input  wire    flash_io0_di,
+	input  wire    flash_io1_di,
+	input  wire    flash_io2_di,
+	input  wire    flash_io3_di
 );
 	reg [7:0] obuffer;
 	reg [7:0] ibuffer;
@@ -538,6 +591,35 @@ module spimemio_xfer (
 	end
 
 	always @(posedge clk) begin
+		
+		fetch <= next_fetch;
+		last_fetch <= xfer_ddr ? fetch : 1;
+		if (dummy_count) begin
+			flash_clk <= !flash_clk && !flash_csb;
+			dummy_count <= dummy_count - flash_clk;
+		end else
+		if (count) begin
+			flash_clk <= !flash_clk && !flash_csb;
+			obuffer <= next_obuffer;
+			ibuffer <= next_ibuffer;
+			count <= next_count;
+		end
+		if (din_valid && din_ready) begin
+			flash_csb <= 0;
+			flash_clk <= 0;
+
+			count <= 8;
+			dummy_count <= din_rd ? din_data : 0;
+			obuffer <= din_data;
+
+			xfer_tag <= din_tag;
+			xfer_cont <= din_cont;
+			xfer_dspi <= din_dspi;
+			xfer_qspi <= din_qspi;
+			xfer_ddr <= din_ddr;
+			xfer_rd <= din_rd;
+		end
+
 		if (!resetn) begin
 			fetch <= 1;
 			last_fetch <= 1;
@@ -551,34 +633,6 @@ module spimemio_xfer (
 			xfer_qspi <= 0;
 			xfer_ddr <= 0;
 			xfer_rd <= 0;
-		end else begin
-			fetch <= next_fetch;
-			last_fetch <= xfer_ddr ? fetch : 1;
-			if (dummy_count) begin
-				flash_clk <= !flash_clk && !flash_csb;
-				dummy_count <= dummy_count - flash_clk;
-			end else
-			if (count) begin
-				flash_clk <= !flash_clk && !flash_csb;
-				obuffer <= next_obuffer;
-				ibuffer <= next_ibuffer;
-				count <= next_count;
-			end
-			if (din_valid && din_ready) begin
-				flash_csb <= 0;
-				flash_clk <= 0;
-
-				count <= 8;
-				dummy_count <= din_rd ? din_data : 0;
-				obuffer <= din_data;
-
-				xfer_tag <= din_tag;
-				xfer_cont <= din_cont;
-				xfer_dspi <= din_dspi;
-				xfer_qspi <= din_qspi;
-				xfer_ddr <= din_ddr;
-				xfer_rd <= din_rd;
-			end
 		end
 	end
 endmodule

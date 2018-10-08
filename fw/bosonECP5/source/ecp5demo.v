@@ -444,7 +444,7 @@ module ecp5demo (
 		.I(hb_cs_o)
 	);
 	
-	spimemio_wb flash0
+	spimemio flash0
 	(
 		.wb_clk_i(wb_clk),
 		.wb_rst_i(wb_rst),
@@ -454,6 +454,7 @@ module ecp5demo (
 		.wb_dat_o(wb_s2m_flash0_dat),
 		.wb_ack_o(wb_s2m_flash0_ack),
 
+		.wb_spi_conf_adr_i(wb_m2s_spi_conf_adr),
 		.wb_spi_conf_dat_i(wb_m2s_spi_conf_dat),
 		.wb_spi_conf_sel_i(wb_m2s_spi_conf_sel),
 		.wb_spi_conf_we_i (wb_m2s_spi_conf_we),
