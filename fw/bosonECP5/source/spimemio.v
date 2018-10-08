@@ -111,7 +111,8 @@ module spimemio (
 	assign cfgreg_do[3:0] = {flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di};
 
 	/* SPI writes */
-	reg [31:0] config_data;
+	reg [7:0] tx_data;
+	reg [7:0] rx_data;
 	reg [4:0] config_count;
 
 
@@ -146,9 +147,10 @@ module spimemio (
 				end
 			end else if(wb_spi_conf_adr_i[2] == 1) begin
 				if(wb_spi_conf_we_i) begin
-					config_data <= wb_spi_conf_dat_i[7:0];
+					tx_data <= wb_spi_conf_dat_i[7:0];
 					config_count <= 16;
 				end
+				wb_spi_conf_dat_o <= rx_data;
 				wb_spi_conf_ack_o <= 1'b1;
 			end
 		end
@@ -156,12 +158,14 @@ module spimemio (
 		/* hardware bit-bang? */
 		if(config_count > 0) begin
 			if(config_count[0] == 0)
-				config_data <= {config_data[6:0], 1'b0};
+				tx_data <= {tx_data[6:0], 1'b0};
+			else
+				rx_data <= {rx_data[6:0], flash_io1_di};
 
 			config_clk <= config_count[0];
-			config_do[0] <= config_data[8];
+			config_do[0] <= tx_data[7];
 
-			config_count <= config_count - 5'b1;
+			config_count <= config_count - 1'b1;
 		end
 		
 		if (wb_rst_i) begin
@@ -177,7 +181,8 @@ module spimemio (
 			config_dummy <= 8;
 
 			config_count <= 0;
-			config_data <= 0;
+			tx_data <= 0;
+			rx_data <= 0;
 		end 
 
 	end
@@ -591,35 +596,6 @@ module spimemio_xfer (
 	end
 
 	always @(posedge clk) begin
-		
-		fetch <= next_fetch;
-		last_fetch <= xfer_ddr ? fetch : 1;
-		if (dummy_count) begin
-			flash_clk <= !flash_clk && !flash_csb;
-			dummy_count <= dummy_count - flash_clk;
-		end else
-		if (count) begin
-			flash_clk <= !flash_clk && !flash_csb;
-			obuffer <= next_obuffer;
-			ibuffer <= next_ibuffer;
-			count <= next_count;
-		end
-		if (din_valid && din_ready) begin
-			flash_csb <= 0;
-			flash_clk <= 0;
-
-			count <= 8;
-			dummy_count <= din_rd ? din_data : 0;
-			obuffer <= din_data;
-
-			xfer_tag <= din_tag;
-			xfer_cont <= din_cont;
-			xfer_dspi <= din_dspi;
-			xfer_qspi <= din_qspi;
-			xfer_ddr <= din_ddr;
-			xfer_rd <= din_rd;
-		end
-
 		if (!resetn) begin
 			fetch <= 1;
 			last_fetch <= 1;
@@ -633,6 +609,34 @@ module spimemio_xfer (
 			xfer_qspi <= 0;
 			xfer_ddr <= 0;
 			xfer_rd <= 0;
+		end else begin
+			fetch <= next_fetch;
+			last_fetch <= xfer_ddr ? fetch : 1;
+			if (dummy_count) begin
+				flash_clk <= !flash_clk && !flash_csb;
+				dummy_count <= dummy_count - flash_clk;
+			end else
+			if (count) begin
+				flash_clk <= !flash_clk && !flash_csb;
+				obuffer <= next_obuffer;
+				ibuffer <= next_ibuffer;
+				count <= next_count;
+			end
+			if (din_valid && din_ready) begin
+				flash_csb <= 0;
+				flash_clk <= 0;
+
+				count <= 8;
+				dummy_count <= din_rd ? din_data : 0;
+				obuffer <= din_data;
+
+				xfer_tag <= din_tag;
+				xfer_cont <= din_cont;
+				xfer_dspi <= din_dspi;
+				xfer_qspi <= din_qspi;
+				xfer_ddr <= din_ddr;
+				xfer_rd <= din_rd;
+			end
 		end
 	end
 endmodule
