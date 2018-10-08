@@ -11,6 +11,7 @@ extern uint32_t sram;
 #define HRAM0 ((volatile uint32_t *)(0x04000000))
 
 #define SPI_REG *(uint32_t *)0x02000000
+#define SPI_DATA *(uint32_t *)0x02000004
 
 #define GPIO (*(volatile uint32_t *)0x02000200)
 
@@ -40,26 +41,52 @@ void programFlash(uint32_t pageCount)
 	spi |= (D0_EN | CS_BIT | D0_BIT | D2_BIT | D3_BIT); /* Enable Bit0 as Output */
 	SPI_REG = spi;
 
+	uint32_t spi_csl = spi & ~(CS_BIT);
+	uint32_t spi_csh = spi | (CS_BIT);
+
 	uint32_t *dataPtr = (uint32_t *)0x04000000;
 
 	for (uint32_t blockNumber = 0; blockNumber < pageCount; blockNumber++)
 	{
 
-		SPI_REG &= ~CS_BIT; /* CS_L */
 		/* Execute a WEN command */
-		{
-			uint8_t CMD = 0x06;
-			for (uint32_t i = 0; i < 8; i++)
-			{
-				SPI_REG &= ~(D0_BIT | CLK_BIT);
-				if (CMD & 0x80)
-					SPI_REG |= D0_BIT;
+		SPI_REG = spi_csl; /* CS_L */
+		SPI_DATA = 0x05;
+		SPI_DATA = 0x00;
+		uint8_t data = SPI_DATA;
+		SPI_REG = spi_csh; /* CS_H */
+		
+		SPI_REG = spi_csl; /* CS_L */
+		SPI_DATA = 0x00;
+		SPI_DATA = data;
+		SPI_REG = spi_csh; /* CS_L */
+		
+		/* Execute a WEN command */
+		SPI_REG = spi_csl; /* CS_L */
+		SPI_DATA = 0x06;
+		SPI_REG = spi_csh; /* CS_H */
 
-				SPI_REG |= CLK_BIT;
-				CMD <<= 1;
-			}
-		}
-		SPI_REG |= CS_BIT; /* CS_H */
+		/* Execute a WEN command */
+		SPI_REG = spi_csl; /* CS_L */
+		SPI_DATA = 0x05;
+		SPI_DATA = 0x00;
+		data = SPI_DATA;
+		SPI_REG = spi_csh; /* CS_H */
+
+
+		SPI_REG = spi_csl; /* CS_L */
+		SPI_DATA = 0x80;
+		SPI_DATA = 0x01;	
+		SPI_REG = spi_csh; /* CS_L */
+		
+		
+		SPI_REG = spi_csl; /* CS_L */
+		SPI_DATA = 0x00;
+		SPI_DATA = data;
+		SPI_REG = spi_csh; /* CS_L */
+		
+
+		while(1);
 
 		SPI_REG &= ~CS_BIT; /* CS_L */
 		/* Execute a Flash Block Erase (64kb) */
@@ -204,6 +231,18 @@ void main()
 
 	print("\r\nBosonBootloader " __DATE__ " " __TIME__ "\r\n");
 
+	
+		uint32_t pageCounts = 16;
+
+		uint32_t func[1024];
+		uint32_t *src_ptr = (uint32_t *)programFlash;
+		uint32_t *dst_ptr = func;
+
+		while (src_ptr != ((uint32_t *)programFlash + 1024))
+			*(dst_ptr++) = *(src_ptr++);
+
+		((void (*)(uint32_t))func)(pageCounts);
+
 	/* Check if we have a uSD card in the slot. */
 
 	FATFS FatFs;
@@ -255,16 +294,6 @@ void main()
 
 		/* TODO: CRC Check */
 
-		uint32_t pageCounts = 16;
-
-		uint32_t func[1024];
-		uint32_t *src_ptr = (uint32_t *)programFlash;
-		uint32_t *dst_ptr = func;
-
-		while (src_ptr != ((uint32_t *)programFlash + 1024))
-			*(dst_ptr++) = *(src_ptr++);
-
-		((void (*)(uint32_t))func)(pageCounts);
 	}
 	else
 	{

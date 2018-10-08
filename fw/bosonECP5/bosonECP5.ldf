@@ -90,9 +90,6 @@
         <Source name="source/sdc_dma/verilog/sdc_controller.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/spimemio_wb.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
         <Source name="source/spimemio.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>

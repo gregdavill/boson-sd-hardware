@@ -113,12 +113,14 @@ module spimemio (
 	/* SPI writes */
 	reg [7:0] tx_data;
 	reg [7:0] rx_data;
-	reg [4:0] config_count;
+	reg [6:0] config_count;
 
+
+	reg last_clk;
 
 	/* Config handling */
 	always @(posedge wb_clk_i) begin
-		softreset <= !config_en || (wb_spi_conf_cyc_i && wb_spi_conf_stb_i);
+		softreset <= !config_en || (wb_spi_conf_cyc_i && wb_spi_conf_stb_i && wb_spi_conf_we_i);
 		
 		wb_spi_conf_ack_o <= 1'b0;
 
@@ -147,8 +149,10 @@ module spimemio (
 				end
 			end else if(wb_spi_conf_adr_i[2] == 1) begin
 				if(wb_spi_conf_we_i) begin
-					tx_data <= wb_spi_conf_dat_i[7:0];
+					tx_data <= {wb_spi_conf_dat_i[6:0],1'b0};
 					config_count <= 16;
+					config_clk <= 0;
+					config_do[0] <= wb_spi_conf_dat_i[7];
 				end
 				wb_spi_conf_dat_o <= rx_data;
 				wb_spi_conf_ack_o <= 1'b1;
@@ -157,16 +161,19 @@ module spimemio (
 
 		/* hardware bit-bang? */
 		if(config_count > 0) begin
-			if(config_count[0] == 0)
+			if(config_count[0]) begin
 				tx_data <= {tx_data[6:0], 1'b0};
-			else
 				rx_data <= {rx_data[6:0], flash_io1_di};
+				config_do[0] <= tx_data[7];
+			end
+				
 
-			config_clk <= config_count[0];
-			config_do[0] <= tx_data[7];
+			config_clk <= !config_count[0];
 
-			config_count <= config_count - 1'b1;
+			config_count <= config_count - 1'b1;	
 		end
+		
+		
 		
 		if (wb_rst_i) begin
 			softreset <= 1;
