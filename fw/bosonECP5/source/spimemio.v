@@ -29,7 +29,7 @@ module spimemio (
     output         wire wb_ack_o,
 	
     input   wire [31:0] wb_spi_conf_dat_i,
-    input    wire [2:0] wb_spi_conf_adr_i,
+    input    wire [3:0] wb_spi_conf_adr_i,
     input    wire [3:0] wb_spi_conf_sel_i,
     input         wire wb_spi_conf_we_i,
     input         wire wb_spi_conf_cyc_i,
@@ -111,9 +111,9 @@ module spimemio (
 	assign cfgreg_do[3:0] = {flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di};
 
 	/* SPI writes */
-	reg [7:0] tx_data;
-	reg [7:0] rx_data;
-	reg [6:0] config_count;
+	reg [30:0] tx_data;
+	reg [30:0] rx_data;
+	reg [7:0] config_count;
 
 
 	reg last_clk;
@@ -149,10 +149,24 @@ module spimemio (
 				end
 			end else if(wb_spi_conf_adr_i[2] == 1) begin
 				if(wb_spi_conf_we_i) begin
-					tx_data <= {wb_spi_conf_dat_i[6:0],1'b0};
-					config_count <= 16;
-					config_clk <= 0;
-					config_do[0] <= wb_spi_conf_dat_i[7];
+					if(wb_spi_conf_sel_i == 4'hF) begin
+						tx_data <= wb_spi_conf_dat_i[30:0];
+						config_do[0] <= wb_spi_conf_dat_i[31];
+						
+						if(wb_spi_conf_adr_i[3] == 1) begin
+							tx_data <= {wb_spi_conf_dat_i[6:0],wb_spi_conf_dat_i[15:8],wb_spi_conf_dat_i[23:16],wb_spi_conf_dat_i[31:24]};
+							config_do[0] <= wb_spi_conf_dat_i[7];
+						end
+						config_count <= 64;
+						config_clk <= 0;
+					end else if(wb_spi_conf_sel_i == 4'h1) begin
+						tx_data <= {wb_spi_conf_dat_i[6:0],24'b0};
+						config_count <= 16;
+						config_clk <= 0;
+						config_do[0] <= wb_spi_conf_dat_i[7];
+					end
+
+					
 				end
 				wb_spi_conf_dat_o <= rx_data;
 				wb_spi_conf_ack_o <= 1'b1;
@@ -162,9 +176,9 @@ module spimemio (
 		/* hardware bit-bang? */
 		if(config_count > 0) begin
 			if(config_count[0]) begin
-				tx_data <= {tx_data[6:0], 1'b0};
-				rx_data <= {rx_data[6:0], flash_io1_di};
-				config_do[0] <= tx_data[7];
+				tx_data <= {tx_data[29:0], 1'b0};
+				rx_data <= {rx_data[29:0], flash_io1_di};
+				config_do[0] <= tx_data[30];
 			end
 				
 
