@@ -11,7 +11,9 @@ extern uint32_t sram;
 #define HRAM0 ((volatile uint32_t *)(0x04000000))
 
 #define SPI_REG *(uint32_t *)0x02000000
-#define SPI_DATA *(uint32_t *)0x02000004
+#define SPI_DATA *(uint8_t *)0x02000004
+#define SPI_DATA32 *(uint32_t *)0x02000004
+#define SPI_DATA32_SWAP *(uint32_t *)0x0200000C
 
 #define GPIO (*(volatile uint32_t *)0x02000200)
 
@@ -51,159 +53,63 @@ void programFlash(uint32_t pageCount)
 
 		/* Execute a WEN command */
 		SPI_REG = spi_csl; /* CS_L */
-		SPI_DATA = 0x05;
-		SPI_DATA = 0x00;
-		uint8_t data = SPI_DATA;
-		SPI_REG = spi_csh; /* CS_H */
-		
-		SPI_REG = spi_csl; /* CS_L */
-		SPI_DATA = 0x00;
-		SPI_DATA = data;
-		SPI_REG = spi_csh; /* CS_L */
-		
-		/* Execute a WEN command */
-		SPI_REG = spi_csl; /* CS_L */
 		SPI_DATA = 0x06;
 		SPI_REG = spi_csh; /* CS_H */
 
-		/* Execute a WEN command */
-		SPI_REG = spi_csl; /* CS_L */
-		SPI_DATA = 0x05;
-		SPI_DATA = 0x00;
-		data = SPI_DATA;
-		SPI_REG = spi_csh; /* CS_H */
-
-
-		SPI_REG = spi_csl; /* CS_L */
-		SPI_DATA = 0x80;
-		SPI_DATA = 0x01;	
-		SPI_REG = spi_csh; /* CS_L */
-		
-		
-		SPI_REG = spi_csl; /* CS_L */
-		SPI_DATA = 0x00;
-		SPI_DATA = data;
-		SPI_REG = spi_csh; /* CS_L */
-		
-
-		while(1);
-
-		SPI_REG &= ~CS_BIT; /* CS_L */
 		/* Execute a Flash Block Erase (64kb) */
 		{
-			uint32_t CMD = 0xD8000000 | (blockNumber << 16);
-			for (uint32_t i = 0; i < 32; i++)
-			{
-				SPI_REG &= ~(D0_BIT | CLK_BIT);
-				if (CMD & 0x80000000)
-					SPI_REG |= D0_BIT;
-
-				SPI_REG |= CLK_BIT;
-				CMD <<= 1;
-			}
+			SPI_REG = spi_csl; /* CS_L */
+			SPI_DATA32 = 0xD8000000 | (blockNumber << 16);
+			SPI_REG = spi_csh; /* CS_H */
 		}
-		SPI_REG |= CS_BIT; /* CS_H */
 
 		/* wait for erase time  */
-		{
-			/* Typ erase time is 60ms for 4kb erase, max 300ms */
-			/* TODO:: read out status reg to determine erase finish. */
-			uint32_t cycles_begin, cycles_now, cycles;
-			__asm__ volatile("rdcycle %0"
-							 : "=r"(cycles_begin));
+		uint8_t status_reg;
+		do {
 
-			uint32_t cycles_total = 300000 * 48;
+			SPI_REG = spi_csl; /* CS_L */
+			SPI_DATA = 0x05;
+			SPI_DATA = 0x00;
+			status_reg = SPI_DATA;
+			SPI_REG = spi_csh; /* CS_H */
 
-			while (1)
-			{
-				__asm__ volatile("rdcycle %0"
-								 : "=r"(cycles_now));
-				cycles = cycles_now - cycles_begin;
-				if (cycles > cycles_total)
-				{
-					break;
-				}
-			}
-		}
-
+		} while((status_reg & 0x01) != 0);
 		
 		for (int currentPage = 0; currentPage < 256; currentPage++)
 		{
-			SPI_REG &= ~CS_BIT; /* CS_L */
 			/* Execute a WEN command */
-			{
-				uint8_t CMD = 0x06;
-				for (uint32_t i = 0; i < 8; i++)
-				{
-					SPI_REG &= ~(D0_BIT | CLK_BIT);
-					if (CMD & 0x80)
-						SPI_REG |= D0_BIT;
+			SPI_REG = spi_csl; /* CS_L */
+			SPI_DATA = 0x06;
+			SPI_REG = spi_csh; /* CS_H */
 
-					SPI_REG |= CLK_BIT;
-					CMD <<= 1;
-				}
-			}
-			SPI_REG |= CS_BIT; /* CS_H */
+			/* Execute a WEN command */
+			SPI_REG = spi_csl; /* CS_L */
+			SPI_DATA32 = 0x02000000 | (blockNumber << 16) | (currentPage << 8);
+			for (uint32_t i = 0; i < 256 / 4; i++)
+				SPI_DATA32_SWAP = *dataPtr++;
+			SPI_REG = spi_csh; /* CS_H */
 
-			SPI_REG &= ~CS_BIT; /* CS_L */
-			/* Program 1 Page 256 bytes */
-			{
-				uint32_t CMD = 0x02000000 | (blockNumber << 16) | (currentPage << 8);
-				for (uint32_t i = 0; i < 32; i++)
-				{
-					SPI_REG &= ~(D0_BIT | CLK_BIT);
-					if (CMD & 0x80000000)
-						SPI_REG |= D0_BIT;
+			/* wait for program to complete  */
+			uint8_t status_reg;
+			do {
 
-					SPI_REG |= CLK_BIT;
-					CMD <<= 1;
-				}
+				SPI_REG = spi_csl; /* CS_L */
+				SPI_DATA = 0x05;
+				SPI_DATA = 0x00;
+				status_reg = SPI_DATA;
+				SPI_REG = spi_csh; /* CS_H */
 
-				for (uint32_t i = 0; i < 256 / 4; i++)
-				{
-					uint32_t dataByte = *dataPtr++;
+			} while((status_reg & 0x01) != 0);
 
-					for (uint32_t j = 0; j < 32; j++)
-					{
-						SPI_REG &= ~(D0_BIT | CLK_BIT);
-						if (dataByte & 0x80000000)
-							SPI_REG |= D0_BIT;
-
-						SPI_REG |= CLK_BIT;
-						dataByte <<= 1;
-					}
-				}
-			}
-			SPI_REG |= CS_BIT; /* CS_H */
-
-			{
-			/* Typ erase time is 60ms for 4kb erase, max 300ms */
-			/* TODO:: read out status reg to determine erase finish. */
-			uint32_t cycles_begin, cycles_now, cycles;
-			__asm__ volatile("rdcycle %0"
-							 : "=r"(cycles_begin));
-
-			uint32_t cycles_total = 5000 * 48;
-
-			while (1)
-			{
-				__asm__ volatile("rdcycle %0"
-								 : "=r"(cycles_now));
-				cycles = cycles_now - cycles_begin;
-				if (cycles > cycles_total)
-				{
-					break;
-				}
-			}
-		}
 		}
 	}
 
-	/* we can never return, the Flash */
+	/* We have just erased and reflashed the FLASH.
+	 * We can never return. Instead we'll reboot the FPGA */
 
 	/* This reset will result in the FPGA 
 	 * reconfiguring itself. */
-	FPGA_RESET = 0xDEADBEEF;
+	//FPGA_RESET = 0xDEADBEEF;
 
 	while (1)
 	{
@@ -230,18 +136,6 @@ void main()
 	uartInit();
 
 	print("\r\nBosonBootloader " __DATE__ " " __TIME__ "\r\n");
-
-	
-		uint32_t pageCounts = 16;
-
-		uint32_t func[1024];
-		uint32_t *src_ptr = (uint32_t *)programFlash;
-		uint32_t *dst_ptr = func;
-
-		while (src_ptr != ((uint32_t *)programFlash + 1024))
-			*(dst_ptr++) = *(src_ptr++);
-
-		((void (*)(uint32_t))func)(pageCounts);
 
 	/* Check if we have a uSD card in the slot. */
 
@@ -293,6 +187,17 @@ void main()
 		/* Perform a CRC error check on the file to determine it's integrity */
 
 		/* TODO: CRC Check */
+
+		uint32_t pageCounts = 16;
+
+		uint32_t func[1024];
+		uint32_t *src_ptr = (uint32_t *)programFlash;
+		uint32_t *dst_ptr = func;
+
+		while (src_ptr != ((uint32_t *)programFlash + 1024))
+			*(dst_ptr++) = *(src_ptr++);
+
+		((void (*)(uint32_t))func)(pageCounts);
 
 	}
 	else
