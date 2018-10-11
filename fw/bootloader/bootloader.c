@@ -146,6 +146,8 @@ void main()
 	print("\r\nBosonBootloader " __DATE__ " " __TIME__ "\r\n");
 
 	/* Check if we have a uSD card in the slot. */
+	// TODO: Check this 
+
 
 	FATFS FatFs;
 	FIL Fil;
@@ -183,6 +185,8 @@ void main()
 		/* Perform a CRC error check on the file to determine it's integrity */
 
 		/* TODO: CRC Check */
+
+		/* TODO: Update check? */
 
 		
 		/* We can save some space by only programming what we have available */
