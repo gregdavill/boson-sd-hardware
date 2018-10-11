@@ -4,11 +4,8 @@
 
 #include "FatFs/ff.h"
 
-// a pointer to this is a null pointer, but the compiler does not
-// know that because "sram" is a linker symbol from sections.lds.
-extern uint32_t sram;
 
-#define HRAM0 ((volatile uint32_t *)(0x04000000))
+#define HRAM0 (uint32_t *)(0x04000000)
 
 #define SPI_REG *(uint32_t *)0x02000000
 #define SPI_DATA *(uint8_t *)0x02000004
@@ -32,21 +29,26 @@ extern uint32_t sram;
 #define D3_BIT 0x08
 
 
-uint32_t print_func[128];
+// a pointer to this is a null pointer, but the compiler does not
+// know that because "sram" is a linker symbol from sections.lds.
+extern uint32_t sram;
+
+uint32_t funcStorage0[1024];
+const void (*bootloaderFunc)(uint32_t) = (void (*)(uint32_t))funcStorage0;
+
 
 void programFlash(uint32_t pageCount)
 {
-
-	/* Enable MEMIO mode (Bitbang) */
+	/* Enable MEMIO mode */
 	uint32_t spi = SPI_REG;
-	spi &= ~(BB_EN | CLK_BIT | D1_EN | D2_EN | D3_EN);
-	spi |= (D0_EN | CS_BIT | D0_BIT | D2_BIT | D3_BIT); /* Enable Bit0 as Output */
+	spi &= ~(BB_EN | CLK_BIT | D1_EN | D2_EN | D3_EN);  /* Bit1, Bit2, Bit3 as Inputs. Clk LOW */
+	spi |= (D0_EN | CS_BIT | D0_BIT | D2_BIT | D3_BIT); /* Bit0 as Output */
 	SPI_REG = spi;
 
 	uint32_t spi_csl = spi & ~(CS_BIT);
 	uint32_t spi_csh = spi | (CS_BIT);
 
-	uint32_t *dataPtr = (uint32_t *)0x04000000;
+	uint32_t *dataPtr = HRAM0;
 
 	for (uint32_t blockNumber = 0; blockNumber < pageCount; blockNumber++)
 	{
@@ -65,7 +67,8 @@ void programFlash(uint32_t pageCount)
 
 		/* wait for erase time  */
 		uint8_t status_reg;
-		do {
+		do
+		{
 
 			SPI_REG = spi_csl; /* CS_L */
 			SPI_DATA = 0x05;
@@ -73,8 +76,8 @@ void programFlash(uint32_t pageCount)
 			status_reg = SPI_DATA;
 			SPI_REG = spi_csh; /* CS_H */
 
-		} while((status_reg & 0x01) != 0);
-		
+		} while ((status_reg & 0x01) != 0);
+
 		for (int currentPage = 0; currentPage < 256; currentPage++)
 		{
 			/* Execute a WEN command */
@@ -91,7 +94,8 @@ void programFlash(uint32_t pageCount)
 
 			/* wait for program to complete  */
 			uint8_t status_reg;
-			do {
+			do
+			{
 
 				SPI_REG = spi_csl; /* CS_L */
 				SPI_DATA = 0x05;
@@ -99,8 +103,7 @@ void programFlash(uint32_t pageCount)
 				status_reg = SPI_DATA;
 				SPI_REG = spi_csh; /* CS_H */
 
-			} while((status_reg & 0x01) != 0);
-
+			} while ((status_reg & 0x01) != 0);
 		}
 	}
 
@@ -109,13 +112,18 @@ void programFlash(uint32_t pageCount)
 
 	/* This reset will result in the FPGA 
 	 * reconfiguring itself. */
-	//FPGA_RESET = 0xDEADBEEF;
+	FPGA_RESET = 0xDEADBEEF;
 
-	while (1)
-	{
-		GPIO = 0x00010001;
-	}
+	/* Sanity check catch all */
+	while(1);
 }
+
+inline void memcpy(uint32_t* dst_ptr, const uint32_t* src_ptr, int size){
+	do{
+		*dst_ptr++ = *src_ptr++;
+	}while(--size);
+}
+
 
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
 
@@ -153,31 +161,19 @@ void main()
 
 		print("File Found Sucessfully\r\n");
 		print("Loading");
+		
 		/* Copy binary data into the RAM */
-		uint8_t *ptr = (uint8_t *)0x04000000;
-
-		UINT bw = 0;
-		uint32_t totalSize = 0;
-
-		while (true)
+		uint8_t *ptr = (uint8_t *)HRAM0;
+		unsigned int bw = 0;
+		
+		do
 		{
 			res = f_read(&Fil, ptr, 512, &bw);
-			totalSize += bw;
 			ptr += bw;
-
-			if (bw != 512)
-			{
-				/* EOF? */
-				break;
-			}
-
-			if (res != FR_OK)
-			{
-				break;
-			}
-
+			
 			print(".");
-		}
+
+		}while((bw == 512) && (res == FR_OK));
 
 		print("OK\r\n");
 
@@ -188,20 +184,25 @@ void main()
 
 		/* TODO: CRC Check */
 
-		uint32_t pageCounts = 16;
+		
+		/* We can save some space by only programming what we have available */
+		uint32_t len = ((uint32_t)ptr - (uint32_t)HRAM0);
+		uint32_t pageCounts = (len / 0x10000) + (len % 0x10000) ? 1 : 0;
+		/* Otherwise 16 pages will replace the entire FLASH */
+		//uint32_t pageCounts = 16;
+		
 
-		uint32_t func[1024];
-		uint32_t *src_ptr = (uint32_t *)programFlash;
-		uint32_t *dst_ptr = func;
 
-		while (src_ptr != ((uint32_t *)programFlash + 1024))
-			*(dst_ptr++) = *(src_ptr++);
+		/* I'm not sure how to check how big a function in C is.
+		 * Se just use space on the stack that is 'big enough' */
+		memcpy(funcStorage0, (uint32_t*)programFlash, sizeof(funcStorage0)/4);
 
-		((void (*)(uint32_t))func)(pageCounts);
-
+		/* Call our function this will begin executing from RAM */
+		((void (*)(uint32_t))bootloaderFunc)(pageCounts);
 	}
 	else
 	{
+		/* Handle Errors */
 		if (res == FR_NO_FILE)
 			print("Error: File does not exist.\r\n");
 		else
