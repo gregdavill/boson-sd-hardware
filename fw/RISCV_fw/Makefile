@@ -9,7 +9,7 @@ firmware.lst: firmware.elf
 	riscv32-unknown-elf-objdump -D -S -l --prefix-addresses firmware.elf > firmware.lst 
 
 firmware.bin: firmware.elf
-	riscv32-unknown-elf-objcopy --pad-to 0xA0000 -O binary firmware.elf firmware.bin
+	riscv32-unknown-elf-objcopy --pad-to 0xC0000 -O binary firmware.elf firmware.bin
 
 clean:
 	rm -f firmware.elf firmware.hex firmware.bin

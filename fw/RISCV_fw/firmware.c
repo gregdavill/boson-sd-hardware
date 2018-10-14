@@ -41,7 +41,7 @@ extern uint32_t sram;
 #define HRAM0_LATENCY_2 (*(volatile uint32_t *)(0x02200004))
 #define HRAM0_CFG (*(volatile uint32_t *)(0x02200008))
 
-#define HRAM0 (*(volatile uint32_t *)(0x04000000))
+#define HRAM0 (volatile uint32_t *)(0x04000000)
 
 // --------------------------------------------------------
 
