@@ -107,6 +107,8 @@ void programFlash(uint32_t pageCount)
 		}
 	}
 
+	GPIO = 0x00010001;
+
 	/* We have just erased and reflashed the FLASH.
 	 * We can never return. Instead we'll reboot the FPGA */
 
@@ -148,7 +150,6 @@ void main()
 	/* Check if we have a uSD card in the slot. */
 	// TODO: Check this 
 
-
 	FATFS FatFs;
 	FIL Fil;
 
@@ -188,12 +189,20 @@ void main()
 
 		/* TODO: Update check? */
 
+		uint32_t file_crc = *(uint32_t*)HRAM0;
+		uint32_t flash_crc = *(uint32_t*)0x00000000;
+
+		/* likely that our files are equal. */
+		if(flash_crc == file_crc){
+			/* Call our main App */
+			((void (*)(void))0x000A0000)();
+		}
 		
 		/* We can save some space by only programming what we have available */
 		uint32_t len = ((uint32_t)ptr - (uint32_t)HRAM0);
-		uint32_t pageCounts = (len / 0x10000) + (len % 0x10000) ? 1 : 0;
+		//uint32_t pageCounts = (len / 0x10000) + (len % 0x10000) ? 1 : 0;
 		/* Otherwise 16 pages will replace the entire FLASH */
-		//uint32_t pageCounts = 16;
+		uint32_t pageCounts = 16;
 		
 
 
@@ -211,5 +220,9 @@ void main()
 			print("Error: File does not exist.\r\n");
 		else
 			print("Error: Trouble finding file\r\n");
+
+		
+		/* try to boot app if we had a failure. */
+		((void (*)(void))0x000A0000)();
 	}
 }
