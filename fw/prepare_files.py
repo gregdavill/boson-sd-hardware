@@ -19,6 +19,7 @@ def calc_crc(out_file, input_files):
 			crc = crc16_ccitt(crc, file.read())
 
 	print('Combined CRC:', format(crc, '04x'))
+	out_file.write(bytes([0xFF, 0x00]))
 	out_file.write(bytes([crc >> 8, crc & 255]))
 	return
 
@@ -37,6 +38,6 @@ if len(sys.argv) != 4:
 
 with open('bosonFirmware.bin', 'wb') as outfile:
     calc_crc(outfile, [sys.argv[1],sys.argv[2],sys.argv[3]])
-    append(outfile, sys.argv[1], 0x90000-2)
+    append(outfile, sys.argv[1], 0x90000-4)
     append(outfile, sys.argv[2], 0x10000)
     append(outfile, sys.argv[3], 0x20000)
