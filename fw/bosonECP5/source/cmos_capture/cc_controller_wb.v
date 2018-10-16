@@ -59,7 +59,9 @@ module cc_controller_wb(
            wb_cyc_i, 
            wb_stb_i, 
            wb_ack_o,
-		   arm_bit
+		   arm_bit,
+		   frame_length,
+		   bits_per_frame
        );
 
 // WISHBONE common
@@ -80,17 +82,14 @@ output reg wb_ack_o;     // WISHBONE acknowledge output
 
 //Register Controll
 output wire arm_bit;
-
-wire we;
+input wire [31:0] frame_length;
+input wire [31:0] bits_per_frame;
 
 
 reg arm_start;
 reg [1:0] arm_sr;
 always @(posedge wb_clk_i) arm_sr <= {arm_sr[0] , arm_start};
 assign arm_bit = (arm_sr == 2'b01);
-
-assign we = (wb_we_i && ((wb_stb_i && wb_cyc_i) || wb_ack_o)) ? 1'b1 : 1'b0;
-
 
 always @(posedge wb_clk_i)
 begin
@@ -102,23 +101,29 @@ begin
     begin
 		wb_ack_o <= 0;
 		arm_start <= 0;
-        if (wb_stb_i & wb_cyc_i)begin
+        if (wb_stb_i & wb_cyc_i & ~wb_ack_o)begin
             if (wb_we_i) begin
                 case (wb_adr_i)
                   4: arm_start <= wb_dat_i[0];    
-                endcase
+				endcase
             end
-            wb_ack_o <= ~wb_ack_o;
+            wb_ack_o <= 1'b1;
         end
     end
 end
 
 
 always @(posedge wb_clk_i) begin
-    if (wb_rst_i == 1) begin
+    
+	wb_dat_o <= 32'b0;
+	
+	case (wb_adr_i)
+		8'h8: wb_dat_o <= frame_length;
+		8'hC: wb_dat_o <= bits_per_frame;
+	endcase
+	
+	if (wb_rst_i == 1) begin
         wb_dat_o <= 0;
-	end else begin
-		wb_dat_o <= 0;
 	end
 end
 

@@ -152,37 +152,7 @@ module ecp5demo (
 	);
 
 
-	// CMOS interface
-	wire [15:0] cmos_data_in;
-	wire cmos_clk_in;
-	wire cmos_vsync_in;
-	wire cmos_hsync_in;
-	wire cmos_valid_in;
-	wire cmos_reset_out;
-
-
-	IB cmos_data_io_buf [15:0] (
-		.I(BOSON_DATA),
-		.O(cmos_data_in)
-	);
 	
-	IB cmos_hsync_io_buf (
-		.I(BOSON_HSYNC),
-		.O(cmos_hsync_in)
-	);
-	IB cmos_vsync_io_buf (
-		.I(BOSON_VSYNC),
-		.O(cmos_vsync_in)
-	);
-	IB cmos_valid_io_buf (
-		.I(BOSON_VALID),
-		.O(cmos_valid_in)
-	);
-	
-	IB cmos_clk_io_buf (
-		.I(BOSON_CLK),
-		.O(cmos_clk_in)
-	);
 
 	wire [15:0] gpio_reg;
 	
@@ -555,119 +525,84 @@ module ecp5demo (
 		 - Module resets flag when frame is captured to RAM.
 	
 	*/
-	
+
+	// CMOS interface
+	wire [15:0] cmos_data_in;
+	wire cmos_clk_in;
+	wire cmos_vsync_in;
+	wire cmos_hsync_in;
+	wire cmos_valid_in;
+	wire cmos_reset_out;
 
 
-	wire cmos_enable_mask;
-	wire streamer_irq;
-
-	wb_cc_cfg wb_cc_cfg0
-	(
-		.wb_clk_i(wb_clk),
-		.wb_rst_i(wb_rst),
-		.wb_adr_i(wb_m2s_cc_cfg_adr[4:0]),
-		.wb_dat_i(wb_m2s_cc_cfg_dat),
-		.wb_sel_i(wb_m2s_cc_cfg_sel),
-		.wb_we_i (wb_m2s_cc_cfg_we),
-		.wb_cyc_i(wb_m2s_cc_cfg_cyc),
-		.wb_stb_i(wb_m2s_cc_cfg_stb),
-		.wb_cti_i(wb_m2s_cc_cfg_cti),
-		.wb_bte_i(wb_m2s_cc_cfg_bte),
-		.wb_dat_o(wb_s2m_cc_cfg_dat),
-		.wb_ack_o(wb_s2m_cc_cfg_ack),
-		.wb_err_o(wb_s2m_cc_cfg_err),
-		.frame_start(!cmos_vsync_in),
-		.capture_done(streamer_irq),
-		.enable(cmos_enable_mask)
+	IB cmos_data_io_buf [15:0] (
+		.I(BOSON_DATA),
+		.O(cmos_data_in)
 	);
 	
-	
-	
-
-
-	wire stream_up_valid,stream_up_ready;
-	wire [31:0] stream_up_data;
-	
-	wire stream_wb_valid,stream_wb_ready;
-	wire [31:0] stream_wb_data;
-
-
-	stream_upsizer #(
-		.DW_IN(16),
-		.SCALE(2)
-	) stream_up0 (
-		.clk(cmos_clk_in),
-		.rst(wb_rst),
-
-		.s_data_i( cmos_data_in),
-		.s_valid_i(cmos_valid_in),
-		//.s_ready_o(ser_tx),
-
-		.m_data_o (stream_up_data),
-		.m_valid_o(stream_up_valid),
-		.m_ready_i(stream_up_ready)
+	IB cmos_hsync_io_buf (
+		.I(BOSON_HSYNC),
+		.O(cmos_hsync_in)
+	);
+	IB cmos_vsync_io_buf (
+		.I(BOSON_VSYNC),
+		.O(cmos_vsync_in)
+	);
+	IB cmos_valid_io_buf (
+		.I(BOSON_VALID),
+		.O(cmos_valid_in)
 	);
 	
-	
-	stream_dual_clock_fifo #(
-	 .DW(32),
-	 .AW(10)
-	 ) stream_fifo_dc (
-		.wr_clk(cmos_clk_in),
-		.wr_rst(wb_rst),
-		
-		.stream_s_data_i(stream_up_data),
-		.stream_s_valid_i(stream_up_valid & cmos_enable_mask),
-		.stream_s_ready_o(stream_up_ready),
-		
-		.rd_clk(wb_clk),
-		.rd_rst(wb_rst),
-		
-		.stream_m_data_o(stream_wb_data),
-		.stream_m_valid_o(stream_wb_valid),
-		.stream_m_ready_i(stream_wb_ready)
-	 );
-	
+	IB cmos_clk_io_buf (
+		.I(BOSON_CLK),
+		.O(cmos_clk_in)
+	); 
 
-
-
-	wb_stream_reader #( 
-		.WB_DW(32),
-		.WB_AW(32),
-		.FIFO_AW(7) 
-	) wb_stream_reader0 (
-		.clk			 (wb_clk),
-		.rst			 (wb_rst),
-		//Wisbhone memory interface
-		.wbm_adr_o		 (wb_m2s_streamer_master_adr),
-		.wbm_dat_o		 (wb_m2s_streamer_master_dat),
-		.wbm_sel_o		 (wb_m2s_streamer_master_sel),
-		.wbm_we_o 		 (wb_m2s_streamer_master_we ),
-		.wbm_cyc_o		 (wb_m2s_streamer_master_cyc),
-		.wbm_stb_o		 (wb_m2s_streamer_master_stb),
-		.wbm_cti_o		 (wb_m2s_streamer_master_cti),
-		.wbm_bte_o		 (wb_m2s_streamer_master_bte),
-		.wbm_dat_i		 (wb_s2m_streamer_master_dat),
-		.wbm_ack_i		 (wb_s2m_streamer_master_ack),
-		.wbm_err_i		 (1'b0),
-		//Stream interface
-		.stream_s_data_i (stream_wb_data),
-		.stream_s_valid_i(stream_wb_valid),
-		.stream_s_ready_o(stream_wb_ready),
-		.irq_o			 (streamer_irq),
-		//Configuration interface
-		.wbs_adr_i		 ( wb_m2s_streamer_adr[4:0]),
-		.wbs_dat_i		 ( wb_m2s_streamer_dat     ),
-		.wbs_sel_i		 ( wb_m2s_streamer_sel     ),
-		.wbs_we_i 		 ( wb_m2s_streamer_we      ),
-		.wbs_cyc_i		 ( wb_m2s_streamer_cyc     ),
-		.wbs_stb_i		 ( wb_m2s_streamer_stb     ),
-		.wbs_dat_o		 ( wb_s2m_streamer_dat     ),
-		.wbs_ack_o		 ( wb_s2m_streamer_ack     ),
-		.wbs_cti_i		 ( wb_m2s_streamer_cti     ),
-		.wbs_bte_i		 ( wb_m2s_streamer_bte     )
+    cc_controller ccc0(
+		// WISHBONE common
+		.wb_clk_i          (wb_clk), 
+		.wb_rst_i          (wb_rst), 
+		// WISHBONE slave
+		.wb_dat_i          (wb_m2s_cc_cfg_dat), 
+		.wb_dat_o          (wb_s2m_cc_cfg_dat),
+		.wb_adr_i          (wb_m2s_cc_cfg_adr), 
+		.wb_sel_i          (wb_m2s_cc_cfg_sel), 
+		.wb_we_i           (wb_m2s_cc_cfg_we ), 
+		.wb_cyc_i          (wb_m2s_cc_cfg_cyc), 
+		.wb_stb_i          (wb_m2s_cc_cfg_stb), 
+		.wb_ack_o          (wb_s2m_cc_cfg_ack),
+		// WISHBONE slave wb_streamer
+		.wb_streamer_dat_i (wb_m2s_streamer_dat), 
+		.wb_streamer_dat_o (wb_s2m_streamer_dat),
+		.wb_streamer_adr_i (wb_m2s_streamer_adr), 
+		.wb_streamer_sel_i (wb_m2s_streamer_sel), 
+		.wb_streamer_we_i  (wb_m2s_streamer_we ), 
+		.wb_streamer_cyc_i (wb_m2s_streamer_cyc), 
+		.wb_streamer_stb_i (wb_m2s_streamer_stb), 
+		.wb_streamer_ack_o (wb_s2m_streamer_ack),
+		// WISHBONE master
+		.m_wb_dat_o        (wb_m2s_streamer_master_dat),
+		.m_wb_dat_i        (wb_s2m_streamer_master_dat),
+		.m_wb_adr_o        (wb_m2s_streamer_master_adr), 
+		.m_wb_sel_o        (wb_m2s_streamer_master_sel), 
+		.m_wb_we_o         (wb_m2s_streamer_master_we ),
+		.m_wb_cyc_o        (wb_m2s_streamer_master_cyc),
+		.m_wb_stb_o        (wb_m2s_streamer_master_stb), 
+		.m_wb_ack_i        (wb_s2m_streamer_master_ack),
+		.m_wb_cti_o        (wb_m2s_streamer_master_cti), 
+		.m_wb_bte_o        (wb_m2s_streamer_master_bte),
+		// CMOS data interface
+		.cmos_data_i       (cmos_data_in),
+		.cmos_clk_i        (cmos_clk_in),
+		.cmos_vsync_i      (cmos_vsync_in),
+		.cmos_hsync_i      (cmos_hsync_in),
+		.cmos_valid_i      (cmos_valid_in),
+		.cmos_reset_o      (cmos_reset_out),
+		
+		.dbg_out
 	);
-	
+
+
 	
 	
 	/* SUMP2 Embedded Logic Analyser */

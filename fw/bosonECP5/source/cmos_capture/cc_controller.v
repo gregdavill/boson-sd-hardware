@@ -143,8 +143,10 @@ output wire [7:0] dbg_out;
 //wb accessible registers
 wire [31:0] dma_addr_reg;
 wire [31:0] status_reg = 0;
-wire [31:0] data_count_reg;
-wire [31:0] data_count_reg_wb;
+wire [31:0] frame_length_reg;
+wire [31:0] frame_length_reg_wb;
+wire [31:0] bits_per_frame_reg;
+wire [31:0] bits_per_frame_reg_wb;
 
 wire arm_bit_wb,arm_bit_cmos;
 
@@ -156,7 +158,7 @@ wire cc_start;
 wire stream_s_ready_o;
 
 wire wb_rst_cmos_o;
-/*
+
 cc_data_host cc_data_host0 (
 	.cmos_clk_i     (cmos_clk_i),
     .rst            (wb_rst_cmos_o),
@@ -166,10 +168,12 @@ cc_data_host cc_data_host0 (
 	.cmos_valid_i   (cmos_valid_i),
 	.cmos_reset_o   (cmos_reset_o),
 	/* Data ready to be read */
-	//.cmos_en_o      (cc_data_valid),
+	.cmos_en_o      (cc_data_valid),
 	/* Control Signals */
-	//.arm			(arm_bit_cmos)
-/*);
+	.arm			(arm_bit_cmos),
+	.frame_length   (frame_length_reg),
+	.bits_per_frame (bits_per_frame_reg)
+);
 
 cc_controller_wb cc_controller_wb0(
     .wb_clk_i                       (wb_clk_i),
@@ -182,10 +186,60 @@ cc_controller_wb cc_controller_wb0(
     .wb_stb_i                       (wb_stb_i),
     .wb_cyc_i                       (wb_cyc_i),
     .wb_ack_o                       (wb_ack_o),
-	.arm_bit                        (arm_bit_wb)
+	.arm_bit                        (arm_bit_wb),
+	.frame_length                   (frame_length_reg_wb),
+	.bits_per_frame                 (bits_per_frame_reg_wb)
     );
 
 */
+
+
+
+	wire stream_up_valid,stream_up_ready;
+	wire [31:0] stream_up_data;
+	
+	wire stream_wb_valid,stream_wb_ready;
+	wire [31:0] stream_wb_data;
+
+
+	stream_upsizer #(
+		.DW_IN(16),
+		.SCALE(2)
+	) stream_up0 (
+		.clk(cmos_clk_i),
+		.rst(wb_rst),
+
+		.s_data_i (cmos_data_i),
+		.s_valid_i(cmos_valid_i),
+		//.s_ready_o(ser_tx),
+
+		.m_data_o (stream_up_data),
+		.m_valid_o(stream_up_valid),
+		.m_ready_i(stream_up_ready)
+	);
+	
+	
+	stream_dual_clock_fifo #(
+	 .DW(32),
+	 .AW(10)
+	 ) stream_fifo_dc (
+		.wr_clk(cmos_clk_i),
+		.wr_rst(wb_rst),
+		
+		.stream_s_data_i(stream_up_data),
+		.stream_s_valid_i(stream_up_valid & cc_data_valid),
+		.stream_s_ready_o(stream_up_ready),
+		
+		.rd_clk(wb_clk),
+		.rd_rst(wb_rst),
+		
+		.stream_m_data_o(stream_wb_data),
+		.stream_m_valid_o(stream_wb_valid),
+		.stream_m_ready_i(stream_wb_ready)
+	 );
+	
+
+
 
 	wb_stream_reader #(
 		.WB_DW(32),
@@ -207,9 +261,9 @@ cc_controller_wb cc_controller_wb0(
 		.wbm_ack_i		 (m_wb_ack_i),
 		//.wbm_err_i		 (m_wb_err_i),
 		//Stream interface
-		.stream_s_data_i ({16'b0,cmos_data_i}),
-		.stream_s_valid_i(cmos_valid_i),
-		.stream_s_ready_o(stream_s_ready_o),
+		.stream_s_data_i (stream_wb_data),
+		.stream_s_valid_i(stream_wb_valid),
+		.stream_s_ready_o(stream_wb_ready),
 		.irq_o			 (),
 		//Configuration interface
 		.wbs_adr_i		 (wb_streamer_adr_i[4:0]),
@@ -229,9 +283,8 @@ cc_controller_wb cc_controller_wb0(
 monostable_domain_cross arm_bit_cross(wb_rst_i, wb_clk_i, arm_bit_wb, cmos_clk_i, arm_bit_cmos);
 
 bistable_domain_cross #(1) rst_bit_cross(wb_rst_i, wb_clk_i, wb_rst_i, cmos_clk_i, wb_rst_cmos_o);
-
-
-//bistable_domain_cross #(32) data_count_reg_cross(wb_rst_i, cmos_clk_i, data_count_reg, wb_clk_i, data_count_reg_wb);
+bistable_domain_cross #(32) frame_count_reg_cross(wb_rst_i, cmos_clk_i, frame_length_reg, wb_clk_i, frame_length_reg_wb);
+bistable_domain_cross #(32) frame_count_reg_cross(wb_rst_i, cmos_clk_i, bits_per_frame_reg, wb_clk_i, bits_per_frame_reg_wb);
 
 
 

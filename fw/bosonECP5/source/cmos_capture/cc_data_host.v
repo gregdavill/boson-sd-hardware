@@ -14,8 +14,8 @@ module cc_data_host(
 		   
            //Control signals
 		   input wire arm,
-		   // data out
-		   output reg [31:0] data_count_reg
+		   output reg [31:0] frame_length,
+		   output reg [31:0] bits_per_frame
        );
 
 
@@ -40,15 +40,14 @@ assign vsync_detect = ({vsync_sr,cmos_vsync_i} == 2'b01);
 assign cmos_en_o   = (state == PASS) ? cmos_valid_i : 1'b0;
 
 
-reg [31:0] data_byte_counter;
+/* Active variables */
+reg [31:0] bits;
+reg [31:0] len;
+
 
 assign cmos_reset_o = !rst;
 
 	always @(posedge cmos_clk_i) begin
-	  if(rst) begin
-		data_byte_counter <= 0;
-		state <= IDLE;
-	  end else begin
 		case (state)
 			IDLE: begin
 				if(arm == 1) begin
@@ -73,7 +72,40 @@ assign cmos_reset_o = !rst;
 				
 				end
 		endcase
-	  end
+		
+		if(rst) begin
+		data_byte_counter <= 0;
+		state <= IDLE;
+		end
+	end
+
+
+	/* Frame information */
+	always @(posedge cmos_clk_i) begin
+		if(vsync_detect) begin
+			/* On a vsync event save the old values and reset. */
+			frame_length <= len;
+			bits_per_frame <= bits;
+
+			len <= 0;
+			bits <= 0;
+		end
+
+		/* Increment bits every clock cmos_valid_i is active */
+		if(cmos_valid_i)
+			bits <= bits + 1;
+		
+		/* Increment len ever clock between vsync events */
+		len <= len + 1;
+		
+		if(rst) begin
+			frame_length <= 0;
+			bits_per_frame <= 0;
+
+			len <= 0;
+			bits <= 0;
+		
+		end
 	end
 
 
