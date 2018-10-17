@@ -151,7 +151,7 @@ wire [31:0] bits_per_frame_reg_wb;
 wire arm_bit_wb,arm_bit_cmos;
 
 
-wire cc_data_valid;
+wire cc_enabled;
 wire cc_start;
 
 
@@ -161,14 +161,14 @@ wire wb_rst_cmos_o;
 
 cc_data_host cc_data_host0 (
 	.cmos_clk_i     (cmos_clk_i),
-    .rst            (wb_rst_cmos_o),
+    .rst            (wb_rst_i),
     .cmos_data_i    (cmos_data_i),
 	.cmos_hsync_i   (cmos_hsync_i),
 	.cmos_vsync_i   (cmos_vsync_i),
 	.cmos_valid_i   (cmos_valid_i),
 	.cmos_reset_o   (cmos_reset_o),
 	/* Data ready to be read */
-	.cmos_en_o      (cc_data_valid),
+	.cc_enabled        (cc_enabled),
 	/* Control Signals */
 	.arm			(arm_bit_cmos),
 	.frame_length   (frame_length_reg),
@@ -187,11 +187,11 @@ cc_controller_wb cc_controller_wb0(
     .wb_cyc_i                       (wb_cyc_i),
     .wb_ack_o                       (wb_ack_o),
 	.arm_bit                        (arm_bit_wb),
+	.enabled                        (cc_enabled),
 	.frame_length                   (frame_length_reg_wb),
 	.bits_per_frame                 (bits_per_frame_reg_wb)
     );
 
-*/
 
 
 
@@ -207,10 +207,10 @@ cc_controller_wb cc_controller_wb0(
 		.SCALE(2)
 	) stream_up0 (
 		.clk(cmos_clk_i),
-		.rst(wb_rst),
+		.rst(wb_rst_i),
 
 		.s_data_i (cmos_data_i),
-		.s_valid_i(cmos_valid_i),
+		.s_valid_i(cmos_valid_i & cc_enabled),
 		//.s_ready_o(ser_tx),
 
 		.m_data_o (stream_up_data),
@@ -224,14 +224,14 @@ cc_controller_wb cc_controller_wb0(
 	 .AW(10)
 	 ) stream_fifo_dc (
 		.wr_clk(cmos_clk_i),
-		.wr_rst(wb_rst),
+		.wr_rst(wb_rst_i),
 		
 		.stream_s_data_i(stream_up_data),
-		.stream_s_valid_i(stream_up_valid & cc_data_valid),
+		.stream_s_valid_i(stream_up_valid),
 		.stream_s_ready_o(stream_up_ready),
 		
-		.rd_clk(wb_clk),
-		.rd_rst(wb_rst),
+		.rd_clk(wb_clk_i),
+		.rd_rst(wb_rst_i),
 		
 		.stream_m_data_o(stream_wb_data),
 		.stream_m_valid_o(stream_wb_valid),
@@ -284,7 +284,7 @@ monostable_domain_cross arm_bit_cross(wb_rst_i, wb_clk_i, arm_bit_wb, cmos_clk_i
 
 bistable_domain_cross #(1) rst_bit_cross(wb_rst_i, wb_clk_i, wb_rst_i, cmos_clk_i, wb_rst_cmos_o);
 bistable_domain_cross #(32) frame_count_reg_cross(wb_rst_i, cmos_clk_i, frame_length_reg, wb_clk_i, frame_length_reg_wb);
-bistable_domain_cross #(32) frame_count_reg_cross(wb_rst_i, cmos_clk_i, bits_per_frame_reg, wb_clk_i, bits_per_frame_reg_wb);
+bistable_domain_cross #(32) bits_per_frame_reg_cross(wb_rst_i, cmos_clk_i, bits_per_frame_reg, wb_clk_i, bits_per_frame_reg_wb);
 
 
 

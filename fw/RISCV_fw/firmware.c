@@ -28,7 +28,9 @@ extern uint32_t sram;
 #define CCC_BASE 0x02100100
 #define CCC_STATUS (*(volatile uint32_t *)(CCC_BASE + 0x04))
 
-#define CC_ENABLE (*(volatile uint32_t *)(0x02002100))
+#define CC_ENABLE (*(volatile uint32_t *)(0x02002104))
+#define CC_FRAME_LEN (*(volatile uint32_t *)(0x02002108))
+#define CC_PIXEL_CNT (*(volatile uint32_t *)(0x0200210c))
 
 #define CCC_STREAMER_BASE 0x02002000
 #define CCC_STREAM_STATUS (*(volatile uint32_t *)(CCC_STREAMER_BASE + 0x00))
@@ -962,12 +964,17 @@ void continuousCapture()
 		/* Gate the data from the camera */
 		CC_ENABLE = 1;
 
-		/* Wait for IRQ signal to be set */
-		while ((CCC_STREAM_STATUS & 2) == 0)
+		/* Wait for IRQ signal to be set, or enabled is cleared */
+		while ((CCC_STREAM_STATUS & 2) == 0 && (CC_ENABLE & 2) != 0)
 		{
 			reg_leds = 0x00010001;
 			reg_leds = 0x00010000;
 		}
+
+		/* record the captured size */
+		uint32_t tx_cnt = CCC_STREAM_TX_CNT;
+		print_hex(tx_cnt, 8);
+		print("\r\n");
 
 		/* clear IRQ */
 		CCC_STREAM_STATUS = 2;
@@ -981,7 +988,7 @@ void continuousCapture()
 			uint8_t *ptr = 0x04000000;
 
 			/* Find and allocate a 512kb block for us */
-			if ((res = f_expand(&Fil, 640 * 512 * 2, 1)) == FR_OK)
+			if ((res = f_expand(&Fil, tx_cnt / 2, 1)) == FR_OK)
 			//if ((res = f_expand(&Fil, 320 * 256 * 2, 1)) == FR_OK)
 			{
 				/* Accessing the contiguous file via low-level disk functions */
@@ -991,7 +998,7 @@ void continuousCapture()
 				DWORD lba = Fil.obj.fs->database + Fil.obj.fs->csize * (Fil.obj.sclust - 2);
 
 				/* Write 2048 sectors from top of the file at a time */
-				res = disk_write(drv, ptr, lba, 1280);
+				res = disk_write(drv, ptr, lba, (tx_cnt / 2 / 512));
 				//res = disk_write(drv, ptr, lba, 320);
 
 				if (res == FR_OK)
@@ -1066,6 +1073,20 @@ void CaptureCamera()
 	dump(0x04000000, 0);
 }
 
+
+void FrameInfo()
+{
+
+	print("Camera Frame Info:");
+	
+
+		print_hex(CC_FRAME_LEN, 8);
+		print(" - ");
+		print_hex(CC_PIXEL_CNT, 8);
+		print("\r\n");
+	
+}
+
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
 
 void main()
@@ -1099,7 +1120,7 @@ void main()
 
 	//set_hyperram_speed();
 
-	continuousCapture();
+	//continuousCapture();
 
 	while (getchar_prompt("Press ENTER to continue..\n") != '\r')
 	{ /* wait */
@@ -1129,7 +1150,7 @@ void main()
 		print("   [5] Continuous Capture\n");
 		print("   [6] HRAM0 test write \n");
 		
-		print("   [9] Run simplistic benchmark\n");
+		print("   [7] Frame Info\n");
 		print("   [0] Benchmark all configs\n");
 		print("\n");
 
@@ -1164,7 +1185,7 @@ void main()
 				HRAM_write_test_good();
 				break;
 			case '7':
-				reg_spictrl = reg_spictrl ^ 0x00100000;
+				FrameInfo();
 				break;
 			case '9':
 				cmd_benchmark(true, 0);

@@ -10,7 +10,7 @@ module cc_data_host(
 		   input wire cmos_valid_i,
 		   output wire cmos_reset_o,
 		   
-		   output wire cmos_en_o,
+		   output wire cc_enabled,
 		   
            //Control signals
 		   input wire arm,
@@ -30,14 +30,13 @@ parameter PASS       = 6'b000100;
 /* Vsync Detect will generate a 1 cycle pulse ever line */
 reg vsync_sr;
 always @(posedge cmos_clk_i) 
-//	vsync_sr[1:0] <= {vsync_sr[0], cmos_hsync_i};
 	vsync_sr <= cmos_vsync_i;
 
 wire vsync_detect;
 assign vsync_detect = ({vsync_sr,cmos_vsync_i} == 2'b01);
 
 /* Mask data based on state machine */
-assign cmos_en_o   = (state == PASS) ? cmos_valid_i : 1'b0;
+assign cc_enabled   = (state == PASS);
 
 
 /* Active variables */
@@ -73,15 +72,21 @@ assign cmos_reset_o = !rst;
 				end
 		endcase
 		
-		if(rst) begin
-		data_byte_counter <= 0;
-		state <= IDLE;
-		end
+		if(rst)
+			state <= IDLE;
 	end
 
 
 	/* Frame information */
 	always @(posedge cmos_clk_i) begin
+		
+		/* Increment bits every clock cmos_valid_i is active */
+		if(cmos_valid_i)
+			bits <= bits + 1;
+		
+		/* Increment len ever clock between vsync events */
+		len <= len + 1;
+		
 		if(vsync_detect) begin
 			/* On a vsync event save the old values and reset. */
 			frame_length <= len;
@@ -91,13 +96,6 @@ assign cmos_reset_o = !rst;
 			bits <= 0;
 		end
 
-		/* Increment bits every clock cmos_valid_i is active */
-		if(cmos_valid_i)
-			bits <= bits + 1;
-		
-		/* Increment len ever clock between vsync events */
-		len <= len + 1;
-		
 		if(rst) begin
 			frame_length <= 0;
 			bits_per_frame <= 0;

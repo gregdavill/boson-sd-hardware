@@ -558,7 +558,7 @@ module ecp5demo (
 		.O(cmos_clk_in)
 	); 
 
-    cc_controller ccc0(
+    cc_controller ccc0 (
 		// WISHBONE common
 		.wb_clk_i          (wb_clk), 
 		.wb_rst_i          (wb_rst), 
@@ -599,7 +599,7 @@ module ecp5demo (
 		.cmos_valid_i      (cmos_valid_in),
 		.cmos_reset_o      (cmos_reset_out),
 		
-		.dbg_out
+		.dbg_out()
 	);
 
 

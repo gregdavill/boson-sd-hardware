@@ -60,6 +60,7 @@ module cc_controller_wb(
            wb_stb_i, 
            wb_ack_o,
 		   arm_bit,
+		   enabled,
 		   frame_length,
 		   bits_per_frame
        );
@@ -82,6 +83,7 @@ output reg wb_ack_o;     // WISHBONE acknowledge output
 
 //Register Controll
 output wire arm_bit;
+input wire enabled;
 input wire [31:0] frame_length;
 input wire [31:0] bits_per_frame;
 
@@ -118,6 +120,7 @@ always @(posedge wb_clk_i) begin
 	wb_dat_o <= 32'b0;
 	
 	case (wb_adr_i)
+		8'h4: wb_dat_o <= {30'b0, enabled, 1'b0};
 		8'h8: wb_dat_o <= frame_length;
 		8'hC: wb_dat_o <= bits_per_frame;
 	endcase

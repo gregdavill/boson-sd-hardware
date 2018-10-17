@@ -50,8 +50,12 @@ void programFlash(uint32_t pageCount)
 
 	uint32_t *dataPtr = HRAM0;
 
+	bool flip = false;
+
 	for (uint32_t blockNumber = 0; blockNumber < pageCount; blockNumber++)
 	{
+		GPIO = 0x00010000 | flip;
+		flip ^= true;
 
 		/* Execute a WEN command */
 		SPI_REG = spi_csl; /* CS_L */
@@ -107,7 +111,7 @@ void programFlash(uint32_t pageCount)
 		}
 	}
 
-	GPIO = 0x00010001;
+	
 
 	/* We have just erased and reflashed the FLASH.
 	 * We can never return. Instead we'll reboot the FPGA */
@@ -143,6 +147,9 @@ void main()
 		*dest++ = 0;
 	}
 
+	bool flip = true;
+	GPIO = 0x00010000 | flip;
+
 	uartInit();
 
 	print("\r\nBosonBootloader " __DATE__ " " __TIME__ "\r\n");
@@ -176,11 +183,17 @@ void main()
 			
 			print(".");
 
+			flip ^= true;	
+			GPIO = 0x00010000 | flip;
+
 		}while((bw == 512) && (res == FR_OK));
 
 		print("OK\r\n");
 
 		print("File Loaded");
+
+
+		GPIO = 0x00010000;
 
 		/* File is loaded in RAM. */
 		/* Perform a CRC error check on the file to determine it's integrity */
@@ -221,6 +234,7 @@ void main()
 		else
 			print("Error: Trouble finding file\r\n");
 
+		GPIO = 0x00010000;
 		
 		/* try to boot app if we had a failure. */
 		((void (*)(void))0x000A0000)();
