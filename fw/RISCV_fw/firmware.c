@@ -2,6 +2,7 @@
 #include <stdbool.h>
 
 #include "FatFs/ff.h"
+#include "FatFs/diskio.h"
 
 // a pointer to this is a null pointer, but the compiler does not
 // know that because "sram" is a linker symbol from sections.lds.
@@ -518,191 +519,6 @@ static void dly_us(UINT n) /* Delay n microseconds (avr-gcc -Os) */
 FATFS FatFs; /* FatFs work area needed for each volume */
 FIL Fil;	 /* File object needed for each open file */
 
-void fatFS_write_fast(void)
-{
-	UINT bw = 0;
-	FRESULT res;
-
-	print("FatFs Test\r\n");
-
-	print("FatFs buff:");
-	print_hex(FatFs.win, 8);
-	print("\r\nFil Buffer:");
-
-	print_hex(Fil.buf, 8);
-	print("\r\n");
-
-	res = f_mount(&FatFs, "", 0); /* Give a work area to the default drive */
-	if ((res = f_open(&Fil, "newfile_fast.txt", FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
-	{ /* Create a file */
-		uint8_t *ptr = 0x04000000;
-
-		print("File Open\r\n");
-
-		//	for(int i = 0; i< 1024 && res == FR_OK; i++){
-		//		res = f_write(&Fil, ptr, 512, &bw);
-		//		ptr += 512;
-		//	}
-		res = f_write(&Fil, ptr, 512 * 1024, &bw);
-
-		if (res == FR_OK)
-		{ /* Write data to the file */
-			if ((res = f_close(&Fil)) == FR_OK)
-			{   /* Close the file */
-				//if (bw == 11 && res == FR_OK) {		/* Lights green LED if data written well */
-				print("It Works\r\n");
-				//}
-			}
-		}
-	}
-
-	if (res != FR_OK)
-	{
-		print("Error\r\n");
-		print_hex(res, 2);
-		print("\r\n");
-		print_hex(bw, 4);
-		print("\r\n");
-
-		dump(FatFs.win, 0);
-	}
-
-	print("Test Complete\r\n");
-}
-
-void fatFS_write(void)
-{
-	UINT bw = 0;
-	FRESULT res;
-
-	print("FatFs Test Slow\r\n");
-
-	res = f_mount(&FatFs, "", 0); /* Give a work area to the default drive */
-	if ((res = f_open(&Fil, "newfile_slow.txt", FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
-	{ /* Create a file */
-		uint8_t *ptr = 0x04000000;
-
-		print("File Open\r\n");
-
-		for (int i = 0; i < 1024 && res == FR_OK; i++)
-		{
-			res = f_write(&Fil, ptr, 512, &bw);
-			ptr += 512;
-		}
-
-		if (res == FR_OK)
-		{ /* Write data to the file */
-			if ((res = f_close(&Fil)) == FR_OK)
-			{   /* Close the file */
-				//if (bw == 11 && res == FR_OK) {		/* Lights green LED if data written well */
-				print("It Works\r\n");
-				//}
-			}
-		}
-	}
-
-	if (res != FR_OK)
-	{
-		print("Error\r\n");
-		print_hex(res, 2);
-		print("\r\n");
-		print_hex(bw, 4);
-		print("\r\n");
-
-		dump(FatFs.win, 0);
-	}
-
-	print("Test Complete\r\n");
-}
-
-void fatFS_write_expand(void)
-{
-	UINT bw = 0;
-	FRESULT res;
-
-	print("FatFs Test Expand\r\n");
-
-	res = f_mount(&FatFs, "", 0); /* Give a work area to the default drive */
-	if ((res = f_open(&Fil, "newfile_expand.txt", FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
-	{ /* Create a file */
-		uint8_t *ptr = 0x04000000;
-
-		print("File Open\r\n");
-
-		/* Find and allocate a 512kb block for us */
-		if ((res = f_expand(&Fil, 512 * 1024, 1)) == FR_OK)
-		{
-			/* Accessing the contiguous file via low-level disk functions */
-
-			/* Get physical location of the file data */
-			BYTE drv = Fil.obj.fs->pdrv;
-			DWORD lba = Fil.obj.fs->database + Fil.obj.fs->csize * (Fil.obj.sclust - 2);
-
-			/* Write 2048 sectors from top of the file at a time */
-			res = disk_write(drv, ptr, lba, 1024);
-
-			if (res == FR_OK)
-			{ /* Write data to the file */
-				if ((res = f_close(&Fil)) == FR_OK)
-				{   /* Close the file */
-					//if (bw == 11 && res == FR_OK) {		/* Lights green LED if data written well */
-					print("It Works\r\n");
-					//}
-				}
-			}
-		}
-	}
-	if (res != FR_OK)
-	{
-		print("Error\r\n");
-		print_hex(res, 2);
-		print("\r\n");
-		print_hex(bw, 4);
-		print("\r\n");
-
-		dump(FatFs.win, 0);
-	}
-
-	print("Test Complete\r\n");
-}
-
-uint8_t buff[512] __attribute__((aligned(8)));
-
-void SDMMC_readblock()
-{
-	disk_initialize(0);
-
-	disk_read(
-		0,
-		buff,
-		0x8000,
-		1);
-
-	dump(buff, 512);
-}
-
-void SDMMC_writeblock()
-{
-	disk_initialize(0);
-
-	for (int i = 0; i < 512; i++)
-	{
-		if (i & 0x04)
-		{
-			buff[i] = 0xFF;
-		}
-		else
-			buff[i] = 0x00;
-	}
-
-	disk_write(
-		0,
-		buff,
-		0x8000,
-		1);
-
-	dump(buff, 512);
-}
 
 void put_dump(const BYTE *buff, DWORD ofs, WORD cnt)
 {
@@ -736,21 +552,13 @@ void put_dump(const BYTE *buff, DWORD ofs, WORD cnt)
 
 void dump(const BYTE *buff, WORD cnt)
 {
-	char *bp;
+	const char *bp;
 	WORD ofs;
 
 	for (bp = buff, ofs = 0; ofs < 0x200; bp += 16, ofs += 16)
 		put_dump(bp, cnt + ofs, 16);
 }
 
-void check_CCC_status()
-{
-	print("CMOS Capture Controller Status:\r\n");
-
-	print("Pixel count: 0x");
-	//	print_hex(CCC,8);
-	print("\r\n");
-}
 
 void short_delay()
 {
@@ -772,72 +580,6 @@ void short_delay()
 
 int flip = 0;
 
-uint32_t data_buf[640];
-
-char c;
-
-void test_uart()
-{
-
-	//CCC_START_ADR = (uint32_t)data_buf;
-	//CCC_BUF_SIZE = 320;
-	//CCC_BURST_SIZE = 1;
-
-	/* Prep the Stream DMA */
-	//CCC_STREAM_STATUS = 1;
-
-	/* Gate the data from the camera */
-	//CCC_DATA_COUNT = 1;
-
-	short_delay();
-
-	//while(CCC_STREAM_STATUS & 1){
-
-	//}
-
-	for (int i = 0; i < 6; i++)
-	{
-		c++;
-		if (c > '~')
-			c = ' ';
-
-		putchar(c);
-	}
-
-	flip ^= 1;
-	reg_leds = 0x00010000 | flip;
-}
-
-void test_ccc()
-{
-
-	CCC_STREAM_START_ADR = (uint32_t)data_buf;
-	CCC_STREAM_BUF_SIZE = 640;
-	CCC_STREAM_BURST_SIZE = 4;
-
-	/* Prep the Stream DMA */
-	CCC_STREAM_STATUS = 1;
-
-	/* Gate the data from the camera */
-	CCC_STATUS = 1;
-
-	while ((CCC_STREAM_STATUS & 2) == 0)
-	{
-
-		short_delay();
-
-		flip ^= 1;
-		reg_leds = 0x00010000 | flip;
-
-		print_hex(CCC_STREAM_TX_CNT, 4);
-		print("\r\n");
-	}
-
-	/* clear IRQ */
-	CCC_STREAM_STATUS = 2;
-
-	dump(data_buf, 0);
-}
 
 void HRAM_write_test_good()
 {
@@ -853,73 +595,24 @@ void HRAM_write_test_good()
 	counter = *((uint32_t *)0x04000008);
 	counter = *((uint32_t *)0x0400000C);
 	
-	dump(0x04000000, 0);
+	dump((const BYTE*)0x04000000, 0);
 }
 
 
-void HRAM_write_test_bad()
-{
-	uint32_t *ptr = HRAM0;
-
-	for (int i = 0; i < 2048; i++)
-	{
-		*ptr++ = i;
-	}
-}
-
-void test_HRAM_rnd()
+void blink_led(int numBlinks)
 {
 
-	CCC_STREAM_START_ADR = (uint32_t)0x04000000;
-	CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
-	CCC_STREAM_BURST_SIZE = 8;
-
-	/* Prep the Stream DMA */
-	CCC_STREAM_STATUS = 1;
-
-	/* Gate the data from the camera */
-	CCC_STATUS = 1;
-
-	while ((CCC_STREAM_STATUS & 2) == 0)
+	for (int i = 0; i < numBlinks; i++)
 	{
-
-		short_delay();
-
-		flip ^= 1;
-		reg_leds = 0x00010000 | flip;
-
-		print_hex(CCC_STREAM_TX_CNT, 4);
-		print("\r\n");
+		reg_leds = 0x00010001;
+		dly_us(5000);
+		reg_leds = 0x00010000;
+		dly_us(5000);
 	}
 
-	/* clear IRQ */
-	CCC_STREAM_STATUS = 2;
-
-	dump(0x04000000, 0);
-	//	dump (HRAM0+128, 0x200);
+	dly_us(20000);
 }
 
-void test_HRAM_read()
-{
-
-	uint32_t *ptr = (uint32_t *)0x04000000;
-	dump(ptr, 0);
-	dump(ptr + 128, 0x200);
-}
-
-void simple_test()
-{
-	while (1)
-	{
-
-		flip ^= 1;
-		reg_leds = 0x00010000 | flip;
-	}
-}
-
-void WriteCapturedImage()
-{
-}
 
 void set_filename(char *p, int i)
 {
@@ -967,7 +660,7 @@ void continuousCapture()
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
 		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
 		//CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
-		CCC_STREAM_BUF_SIZE = 640 * 512 * 2;
+		CCC_STREAM_BUF_SIZE = pixel_cnt * 2;
 		CCC_STREAM_BURST_SIZE = 16;
 
 		/* Enable the Stream DMA */
@@ -990,13 +683,13 @@ void continuousCapture()
 
 		UINT bw = 0;
 
+		/* Create a file */
 		if ((res = f_open(&Fil, filename, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
-		{ /* Create a file */
-			uint8_t *ptr = 0x04000000;
+		{ 
+			uint8_t *ptr = (uint8_t*)0x04000000;
 
 			/* Find and allocate a block the size of the image (16bit) for us */
-			if ((res = f_expand(&Fil, frame_cnt * 2, 1)) == FR_OK)
-			//if ((res = f_expand(&Fil, 320 * 256 * 2, 1)) == FR_OK)
+			if ((res = f_expand(&Fil, pixel_cnt * 2, 1)) == FR_OK)
 			{
 				/* Accessing the contiguous file via low-level disk functions */
 
@@ -1008,9 +701,8 @@ void continuousCapture()
 					Each sector is 512bytes in size.
 					Our image is frame_cnt pixels large, each pixel is 16bits.
 				*/
-				res = disk_write(drv, ptr, lba, (frame_cnt / 256));
-				//res = disk_write(drv, ptr, lba, 320);
-
+				res = disk_write(drv, ptr, lba, (pixel_cnt / 256));
+				
 				if (res == FR_OK)
 				{ /* Write data to the file */
 					if ((res = f_close(&Fil)) == FR_OK)
@@ -1033,69 +725,6 @@ void continuousCapture()
 	}
 }
 
-void blink_led(int numBlinks)
-{
-
-	for (int i = 0; i < numBlinks; i++)
-	{
-		reg_leds = 0x00010001;
-		dly_us(5000);
-		reg_leds = 0x00010000;
-		dly_us(5000);
-	}
-
-	dly_us(20000);
-}
-
-void CaptureCamera()
-{
-
-	print("Capture stream to 0x04000000\r\n");
-	CCC_STREAM_START_ADR = (uint32_t)0x04000000;
-	CCC_STREAM_BUF_SIZE = (320 * 256 * 2);
-	CCC_STREAM_BURST_SIZE = 8;
-
-	/* Enable the Stream DMA */
-	CCC_STREAM_STATUS = 1;
-
-	/* Gate the data from the camera */
-	CC_ENABLE = 1;
-
-	/* Wait for IRQ signal to be set */
-	while ((CCC_STREAM_STATUS & 2) == 0)
-	{
-
-		dly_us(1000);
-
-		flip ^= 1;
-		reg_leds = 0x00010000 | flip;
-
-		print_hex(CCC_STREAM_TX_CNT, 4);
-		print(" - ");
-		print_hex(CC_ENABLE, 1);
-		print("\r\n");
-	}
-
-	/* clear IRQ */
-	CCC_STREAM_STATUS = 2;
-
-	print("Data at 0x04000000:\r\n");
-	dump(0x04000000, 0);
-}
-
-
-void FrameInfo()
-{
-
-	print("Camera Frame Info:");
-	
-
-		print_hex(CC_FRAME_LEN, 8);
-		print(" - ");
-		print_hex(CC_PIXEL_CNT, 8);
-		print("\r\n");
-	
-}
 
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
 
@@ -1118,9 +747,6 @@ void main()
 	//set_flash_latency(4);
 	//reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00300000;
 
-	//test_HRAM_rnd();
-
-	//simple_test();
 
 	//HRAM0_LATENCY_1 = 0x04;
 	//HRAM0_LATENCY_2 = 0x0a;
@@ -1128,9 +754,9 @@ void main()
 
 	//set_hyperram_speed();
 
-	//set_hyperram_speed();
+	continuousCapture();
 
-	//continuousCapture();
+
 
 	while (getchar_prompt("Press ENTER to continue..\n") != '\r')
 	{ /* wait */
@@ -1154,14 +780,6 @@ void main()
 		print("Select an action:\n");
 		print("\n");
 		print("   [1] FATFS Write\n");
-		print("   [2] FATFS Write_fast\n");
-		print("   [3] FATFS Write_expand\n");
-		print("   [4] Capture from Camera\n");
-		print("   [5] Continuous Capture\n");
-		print("   [6] HRAM0 test write \n");
-		
-		print("   [7] Frame Info\n");
-		print("   [0] Benchmark all configs\n");
 		print("\n");
 
 		for (int rep = 10; rep > 0; rep--)
@@ -1175,33 +793,6 @@ void main()
 			switch (cmd)
 			{
 			case '1':
-				fatFS_write();
-				break;
-			case '2':
-				fatFS_write_fast();
-				break;
-
-			case '3':
-				fatFS_write_expand();
-				break;
-			case '4':
-				CaptureCamera();
-				break;
-			case '5':
-				/* continuous capture */
-				continuousCapture();
-				break;
-			case '6':
-				HRAM_write_test_good();
-				break;
-			case '7':
-				FrameInfo();
-				break;
-			case '9':
-				cmd_benchmark(true, 0);
-				break;
-			case '0':
-				cmd_benchmark_all();
 				break;
 			default:
 				continue;
