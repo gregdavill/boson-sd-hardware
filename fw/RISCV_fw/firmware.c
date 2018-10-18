@@ -28,6 +28,7 @@ extern uint32_t sram;
 #define CCC_BASE 0x02100100
 #define CCC_STATUS (*(volatile uint32_t *)(CCC_BASE + 0x04))
 
+#define CC_FRAME_CNT (*(volatile uint32_t *)(0x02002100))
 #define CC_ENABLE (*(volatile uint32_t *)(0x02002104))
 #define CC_FRAME_LEN (*(volatile uint32_t *)(0x02002108))
 #define CC_PIXEL_CNT (*(volatile uint32_t *)(0x0200210c))
@@ -946,10 +947,21 @@ void continuousCapture()
 	FRESULT res;
 	res = f_mount(&FatFs, "", 0); /* Give a work area to the default drive */
 
+
+	/* Determine what camera we are connected to */
+	uint32_t frame_cnt = CC_FRAME_CNT;
+	while(frame_cnt == CC_FRAME_CNT);
+
+	/* record last frame size in pixels */
+	uint32_t pixel_cnt = CC_PIXEL_CNT;
+
 	while (1)
 	{
 
 		set_filename(filename, image_number++);
+
+		/* sw reset of wb_streamer component */
+		CCC_STREAM_STATUS = 4;
 
 		/* Capture our image length into external hyperRAM */
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
@@ -961,20 +973,15 @@ void continuousCapture()
 		/* Enable the Stream DMA */
 		CCC_STREAM_STATUS = 1;
 
-		/* Gate the data from the camera */
+		/* enable data from the camera for next vsync period */
 		CC_ENABLE = 1;
 
-		/* Wait for IRQ signal to be set, or enabled is cleared */
-		while ((CCC_STREAM_STATUS & 2) == 0 && (CC_ENABLE & 2) != 0)
+		/* Wait for IRQ signal to be set */
+		while ((CCC_STREAM_STATUS & 2) == 0)
 		{
 			reg_leds = 0x00010001;
 			reg_leds = 0x00010000;
 		}
-
-		/* record the captured size */
-		uint32_t tx_cnt = CCC_STREAM_TX_CNT;
-		print_hex(tx_cnt, 8);
-		print("\r\n");
 
 		/* clear IRQ */
 		CCC_STREAM_STATUS = 2;
@@ -987,8 +994,8 @@ void continuousCapture()
 		{ /* Create a file */
 			uint8_t *ptr = 0x04000000;
 
-			/* Find and allocate a 512kb block for us */
-			if ((res = f_expand(&Fil, tx_cnt / 2, 1)) == FR_OK)
+			/* Find and allocate a block the size of the image (16bit) for us */
+			if ((res = f_expand(&Fil, frame_cnt * 2, 1)) == FR_OK)
 			//if ((res = f_expand(&Fil, 320 * 256 * 2, 1)) == FR_OK)
 			{
 				/* Accessing the contiguous file via low-level disk functions */
@@ -997,8 +1004,11 @@ void continuousCapture()
 				BYTE drv = Fil.obj.fs->pdrv;
 				DWORD lba = Fil.obj.fs->database + Fil.obj.fs->csize * (Fil.obj.sclust - 2);
 
-				/* Write 2048 sectors from top of the file at a time */
-				res = disk_write(drv, ptr, lba, (tx_cnt / 2 / 512));
+				/* Write all the sectors from top of the file at a time 
+					Each sector is 512bytes in size.
+					Our image is frame_cnt pixels large, each pixel is 16bits.
+				*/
+				res = disk_write(drv, ptr, lba, (frame_cnt / 256));
 				//res = disk_write(drv, ptr, lba, 320);
 
 				if (res == FR_OK)

@@ -15,7 +15,8 @@ module cc_data_host(
            //Control signals
 		   input wire arm,
 		   output reg [31:0] frame_length,
-		   output reg [31:0] bits_per_frame
+		   output reg [31:0] bits_per_frame,
+		   output reg [31:0] frame_count
        );
 
 
@@ -92,6 +93,8 @@ assign cmos_reset_o = !rst;
 			frame_length <= len;
 			bits_per_frame <= bits;
 
+			frame_count <= frame_count + 1;
+
 			len <= 0;
 			bits <= 0;
 		end
@@ -102,6 +105,7 @@ assign cmos_reset_o = !rst;
 
 			len <= 0;
 			bits <= 0;
+			frame_count <= 0;
 		
 		end
 	end

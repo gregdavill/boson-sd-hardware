@@ -25,7 +25,7 @@ module wb_stream_reader_cfg
    output reg [WB_AW-1:0] buf_size,
    output reg [WB_AW-1:0] burst_size);
 
-   reg 			  busy_r;
+   reg 			  busy_r, sw_rst;
    always @(posedge wb_clk_i)
      if (wb_rst_i)
        busy_r <= 0;
@@ -54,6 +54,7 @@ module wb_stream_reader_cfg
 	   0 : begin
 	      if (wb_dat_i[0]) enable <= 1;
 	      if (wb_dat_i[1]) irq <= 0;
+		  if (wb_dat_i[2]) sw_rst <= 1;
 	   end
 	   1 : start_adr <= wb_dat_i;
 	   2 : buf_size  <= wb_dat_i;
@@ -66,13 +67,14 @@ module wb_stream_reader_cfg
       if (!busy & busy_r)
 	irq <= 1;
 
-      if (wb_rst_i) begin
+      if (wb_rst_i | sw_rst) begin
 	 wb_ack_o   <= 0;
 	 enable     <= 1'b0;
 	 start_adr  <= 0; 
 	 buf_size   <= 0;
 	 burst_size <= 0;
 	 irq <= 0;
+	 sw_rst <= 0;
       end
    end
    assign wb_err_o = 0;

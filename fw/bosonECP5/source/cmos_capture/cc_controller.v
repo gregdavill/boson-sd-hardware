@@ -147,6 +147,8 @@ wire [31:0] frame_length_reg;
 wire [31:0] frame_length_reg_wb;
 wire [31:0] bits_per_frame_reg;
 wire [31:0] bits_per_frame_reg_wb;
+wire [31:0] frame_count_reg;
+wire [31:0] frame_count_reg_wb;
 
 wire arm_bit_wb,arm_bit_cmos;
 
@@ -173,6 +175,7 @@ cc_data_host cc_data_host0 (
 	.arm			(arm_bit_cmos),
 	.frame_length   (frame_length_reg),
 	.bits_per_frame (bits_per_frame_reg)
+	.frame_count    (frame_count_reg)
 );
 
 cc_controller_wb cc_controller_wb0(
@@ -190,6 +193,7 @@ cc_controller_wb cc_controller_wb0(
 	.enabled                        (cc_enabled),
 	.frame_length                   (frame_length_reg_wb),
 	.bits_per_frame                 (bits_per_frame_reg_wb)
+	.frame_count                    (frame_count_reg_wb)
     );
 
 
@@ -285,6 +289,7 @@ monostable_domain_cross arm_bit_cross(wb_rst_i, wb_clk_i, arm_bit_wb, cmos_clk_i
 bistable_domain_cross #(1) rst_bit_cross(wb_rst_i, wb_clk_i, wb_rst_i, cmos_clk_i, wb_rst_cmos_o);
 bistable_domain_cross #(32) frame_count_reg_cross(wb_rst_i, cmos_clk_i, frame_length_reg, wb_clk_i, frame_length_reg_wb);
 bistable_domain_cross #(32) bits_per_frame_reg_cross(wb_rst_i, cmos_clk_i, bits_per_frame_reg, wb_clk_i, bits_per_frame_reg_wb);
+bistable_domain_cross #(32) frame_count_reg_cross(wb_rst_i, cmos_clk_i, frame_count_reg, wb_clk_i, frame_count_reg_wb);
 
 
 
