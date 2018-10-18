@@ -178,7 +178,7 @@ module ecp5demo (
 	);
 		
 	/* Used for the bootloader to reset the FPGA and force re-config */
-	assign fpga_reset = 1'b1;//~(sw_fpga_reset & ~wb_rst);
+	assign fpga_reset = ~(sw_fpga_reset & ~wb_rst);
 	
 	assign led = gpio_reg[0];
 	

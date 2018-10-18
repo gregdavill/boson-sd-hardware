@@ -39,7 +39,7 @@ module wb_reset_reg
 
       if (wb_rst_i) begin
 	 
-		reset_out <= 1'b1;
+		reset_out <= 1'b0;
       end
 	  
    end
