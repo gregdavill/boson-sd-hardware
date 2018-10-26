@@ -81,7 +81,7 @@ void set_flash_qspi_flag()
 	status_2 |= (1 << 1);
 
 	uint8_t buffer_wr[3] = {0x01, status_1, status_2};
-	flashio(buffer_wr, 3, 0);
+	flashio(buffer_wr, 3, 1);
 }
 
 void set_flash_latency(uint8_t value)
@@ -581,7 +581,7 @@ void short_delay()
 int flip = 0;
 
 
-void HRAM_write_test_good()
+void hram_test()
 {
 	static uint32_t counter;
 
@@ -654,27 +654,27 @@ void continuousCapture()
 		set_filename(filename, image_number++);
 
 		/* sw reset of wb_streamer component */
-		CCC_STREAM_STATUS = 4;
+		//CCC_STREAM_STATUS = 4;
 
 		/* Capture our image length into external hyperRAM */
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
 		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
 		//CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
 		CCC_STREAM_BUF_SIZE = pixel_cnt * 2;
-		CCC_STREAM_BURST_SIZE = 16;
+		CCC_STREAM_BURST_SIZE = 8;
 
-		/* Enable the Stream DMA */
-		CCC_STREAM_STATUS = 1;
+		/* Enable the Stream DMA and clear IRQ bit*/
+		CCC_STREAM_STATUS = 3;
 
 		/* enable data from the camera for next vsync period */
 		CC_ENABLE = 1;
 
 		/* Wait for IRQ signal to be set */
-		while ((CCC_STREAM_STATUS & 2) == 0)
+		reg_leds = 0x00010001;
+		while (CCC_STREAM_STATUS != 2)
 		{
-			reg_leds = 0x00010001;
-			reg_leds = 0x00010000;
 		}
+		reg_leds = 0x00010000;
 
 		/* clear IRQ */
 		CCC_STREAM_STATUS = 2;
@@ -747,14 +747,10 @@ void main()
 	//set_flash_latency(4);
 	//reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00300000;
 
-
-	//HRAM0_LATENCY_1 = 0x04;
-	//HRAM0_LATENCY_2 = 0x0a;
+	/* Reduce latency for HyperRAM Writes/Reads */
 	//HRAM0_CFG = 0x8fe40000;
 
-	//set_hyperram_speed();
-
-	continuousCapture();
+	//continuousCapture();
 
 
 
@@ -793,6 +789,7 @@ void main()
 			switch (cmd)
 			{
 			case '1':
+				hram_test();
 				break;
 			default:
 				continue;

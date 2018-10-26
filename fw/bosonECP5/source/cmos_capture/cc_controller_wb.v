@@ -80,9 +80,9 @@ input wire wb_we_i;      // WISHBONE write enable input
 input wire wb_cyc_i;     // WISHBONE cycle input
 input wire wb_stb_i;     // WISHBONE strobe input
 output reg wb_ack_o;     // WISHBONE acknowledge output
-//Buss accessible registers
+//Bus accessible registers
 
-//Register Controll
+//Register Control
 output wire arm_bit;
 input wire enabled;
 input wire [31:0] frame_length;

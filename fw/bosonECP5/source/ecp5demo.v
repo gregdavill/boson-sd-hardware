@@ -81,7 +81,7 @@ module ecp5demo (
 	assign clk = clk_input;
 `else
 	/* 48MHz */ 
-	pll _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
+	pll _inst (.CLKI(clk_input), .CLKOP(clk_90), .CLKOS(clk), .LOCK(pll_lock));
 	
 	/* 6MHz */ 
 	//pll _inst (.CLKI(clk_input), .CLKOS2(clk), .CLKOS3(clk_90), .LOCK(pll_lock));
@@ -499,33 +499,14 @@ module ecp5demo (
 		.sd_cmd_dat_i  (sd_cmd_in    ),
 		.sd_cmd_out_o  (sd_cmd_out   ),
 		.sd_cmd_oe_o   (sd_cmd_oe    ),
-		.sd_dat_dat_i  (sd_dat_in    ),  //sd_dat_pad_io),
+		.sd_dat_dat_i  (sd_dat_in    ),
 		.sd_dat_out_o  (sd_dat_out   ),
 		.sd_dat_oe_o   (sd_dat_oe    ),
 		.sd_clk_o_pad  (sd_clk_pad_o ),
 		.sd_clk_i_pad  (wb_clk       )
 	);
 	 
-	 
 	
-	/* TODO Stream FlowControl module: 
-	
-		Tasks:
-			Monitor Camera clk freq (freq capture)
-			Monitor V-sync, clocks between pulses. (PWM capture?)
-			Monitor H-Sync, clocks between pulses. (PWM capture?)
-			Monitor Data EN, Total bits per frame,
-			
-			Count total frames.
-
-		Syncronised V-sync.
-	
-		jk, set/reset to capture a total frame.
-		 - CPU set register, monitor while frame capture is active.
-		 - Module resets flag when frame is captured to RAM.
-	
-	*/
-
 	// CMOS interface
 	wire [15:0] cmos_data_in;
 	wire cmos_clk_in;
