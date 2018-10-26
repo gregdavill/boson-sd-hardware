@@ -36,14 +36,24 @@ extern uint32_t sram;
 uint32_t funcStorage0[1024];
 const void (*bootloaderFunc)(uint32_t) = (void (*)(uint32_t))funcStorage0;
 
+#define UART0_BASE 0x02001100
+#define UART0_TXREG (*(volatile uint32_t *)((UART0_BASE) + 0xc))
 
 void programFlash(uint32_t pageCount)
 {
+
+	while ((UART0_TXREG & (1 << 13)) != 0);
+	UART0_TXREG = 'a';
+
 	/* Enable MEMIO mode */
 	uint32_t spi = SPI_REG;
 	spi &= ~(BB_EN | CLK_BIT | D1_EN | D2_EN | D3_EN);  /* Bit1, Bit2, Bit3 as Inputs. Clk LOW */
 	spi |= (D0_EN | CS_BIT | D0_BIT | D2_BIT | D3_BIT); /* Bit0 as Output */
 	SPI_REG = spi;
+
+
+	while ((UART0_TXREG & (1 << 13)) != 0);
+	UART0_TXREG = 'b';
 
 	uint32_t spi_csl = spi & ~(CS_BIT);
 	uint32_t spi_csh = spi | (CS_BIT);
@@ -62,12 +72,19 @@ void programFlash(uint32_t pageCount)
 		SPI_DATA = 0x06;
 		SPI_REG = spi_csh; /* CS_H */
 
+
+	while ((UART0_TXREG & (1 << 13)) != 0);
+	UART0_TXREG = 'c';
 		/* Execute a Flash Block Erase (64kb) */
 		{
 			SPI_REG = spi_csl; /* CS_L */
 			SPI_DATA32 = 0xD8000000 | (blockNumber << 16);
 			SPI_REG = spi_csh; /* CS_H */
 		}
+
+		
+	while ((UART0_TXREG & (1 << 13)) != 0);
+	UART0_TXREG = 'd';
 
 		/* wait for erase time  */
 		uint8_t status_reg;
@@ -81,6 +98,10 @@ void programFlash(uint32_t pageCount)
 			SPI_REG = spi_csh; /* CS_H */
 
 		} while ((status_reg & 0x01) != 0);
+
+
+	while ((UART0_TXREG & (1 << 13)) != 0);
+	UART0_TXREG = 'e';
 
 		for (int currentPage = 0; currentPage < 256; currentPage++)
 		{
@@ -108,6 +129,10 @@ void programFlash(uint32_t pageCount)
 				SPI_REG = spi_csh; /* CS_H */
 
 			} while ((status_reg & 0x01) != 0);
+
+			
+			while ((UART0_TXREG & (1 << 13)) != 0);
+			UART0_TXREG = 'f';
 		}
 	}
 
@@ -224,7 +249,7 @@ void main()
 		memcpy(funcStorage0, (uint32_t*)programFlash, sizeof(funcStorage0)/4);
 
 		/* Call our function this will begin executing from RAM */
-		((void (*)(uint32_t))bootloaderFunc)(pageCounts);
+		((void (*)(uint32_t))funcStorage0)(pageCounts);
 	}
 	else
 	{

@@ -81,7 +81,7 @@ module ecp5demo (
 	assign clk = clk_input;
 `else
 	/* 48MHz */ 
-	pll _inst (.CLKI(clk_input), .CLKOP(clk_90), .CLKOS(clk), .LOCK(pll_lock));
+	pll _inst (.CLKI(clk_input), .CLKOP(clk), .CLKOS(clk_90), .LOCK(pll_lock));
 	
 	/* 6MHz */ 
 	//pll _inst (.CLKI(clk_input), .CLKOS2(clk), .CLKOS3(clk_90), .LOCK(pll_lock));

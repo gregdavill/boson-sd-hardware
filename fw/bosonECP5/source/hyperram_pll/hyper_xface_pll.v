@@ -718,8 +718,8 @@ for ( i2=0; i2<=7; i2=i2+1 ) begin: gen_i2
   (
     .clk       ( clk                 ),
     .din       ( dram_dq_in[i2]      ),
-    .dout_fal  ( dram_dq_in_fal[i2]  ),
-    .dout_ris  ( dram_dq_in_ris[i2]  ),
+    .dout_fal  ( dram_dq_in_ris[i2]  ),
+    .dout_ris  ( dram_dq_in_fal[i2]  ),
   .rst       (reset )
   );
 end
@@ -728,8 +728,8 @@ endgenerate
   (
     .clk       ( clk                 ),
     .din       ( dram_rwds_in        ),
-    .dout_fal  ( dram_rwds_in_fal    ),
-    .dout_ris  ( dram_rwds_in_ris    ),
+    .dout_fal  ( dram_rwds_in_ris    ),
+    .dout_ris  ( dram_rwds_in_fal    ),
   .rst       (reset )
   );
 
