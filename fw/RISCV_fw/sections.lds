@@ -1,6 +1,6 @@
 MEMORY
 {
-    FLASH (rx)      : ORIGIN = 0x000A0000, LENGTH = 0x20000 /* 1 page of FLASH */
+    FLASH (rx)      : ORIGIN = 0x00090000, LENGTH = 0x20000 /* 1 page of FLASH */
     RAM (xrw)       : ORIGIN = 0x01000000, LENGTH = 0x4000 /* 4096 DWORDs (16Kb) */
 }
 

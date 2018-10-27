@@ -602,7 +602,7 @@ always @ ( posedge clk ) begin : proc_rd_sr
    dram_dq_in_ris_p1   <= dram_dq_in_ris[7:0];
    dram_dq_in_fal_p1   <= dram_dq_in_fal[7:0];
    if ( rd_burst_en_sr | rd_first_byte ) begin
-     if ( ( ( dram_rwds_in_fal_p1 == 1 && dram_rwds_in_ris_p1 == 0) || simulation_en == 1 ) 
+     if ( ( ( dram_rwds_in_fal == 1 && dram_rwds_in_ris == 0) || simulation_en == 1 ) 
           && rd_dir_jk_p4 == 1 ) begin
        rd_word_cnt <= ~ rd_word_cnt;
        if ( rd_word_cnt == 1 ) begin
@@ -621,8 +621,8 @@ always @ ( posedge clk ) begin : proc_rd_sr
    end
    
    /* Timout */
-   if(rw_bit == 1 && reg_bit == 0 && fsm_wait == 0) begin
-	//rd_rdy <= 1;
+   if(cycle_len > 64) begin
+	rd_rdy <= 1;
    end
    
  end
@@ -762,7 +762,7 @@ ecp_oddr u0_xil_oddr
 
 
 
-always @(negedge clk) begin
+always @(posedge clk) begin
 	dram_ck_en <= ~cs_l_reg;
 end
 

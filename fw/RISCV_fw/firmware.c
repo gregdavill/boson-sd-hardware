@@ -41,47 +41,52 @@ extern uint32_t sram;
 #define CCC_STREAM_BURST_SIZE (*(volatile uint32_t *)(CCC_STREAMER_BASE + 0x0C))
 #define CCC_STREAM_TX_CNT (*(volatile uint32_t *)(CCC_STREAMER_BASE + 0x10))
 
-#define HRAM0_LATENCY_1 (*(volatile uint32_t *)(0x02200000))
-#define HRAM0_LATENCY_2 (*(volatile uint32_t *)(0x02200004))
-#define HRAM0_CFG (*(volatile uint32_t *)(0x02200008))
+#define HRAM0_CFG (*(volatile uint32_t *)(0x02200000))
 
 #define HRAM0 (volatile uint32_t *)(0x04000000)
+
+
+
+void print(const char *p);
+
 
 // --------------------------------------------------------
 
 extern uint32_t flashio_worker_begin;
 extern uint32_t flashio_worker_end;
 
-void flashio(uint8_t *data, int len, uint8_t wrencmd)
-{
-	uint32_t func[&flashio_worker_end - &flashio_worker_begin];
 
-	uint32_t *src_ptr = &flashio_worker_begin;
-	uint32_t *dst_ptr = func;
-
-	while (src_ptr != &flashio_worker_end)
-		*(dst_ptr++) = *(src_ptr++);
-
-	((void (*)(uint8_t *, uint32_t, uint32_t))func)(data, len, wrencmd);
+inline void memcpy(uint32_t* dst_ptr, const uint32_t* src_ptr, int size){
+	do{
+		*dst_ptr++ = *src_ptr++;
+	}while(--size);
 }
 
-void set_flash_qspi_flag()
+
+void flashio(uint8_t *data, int len, uint8_t wrencmd)
+{
+	uint32_t funcStorage0[256];
+	memcpy(funcStorage0, &flashio_worker_begin, 255);
+
+	((void (*)(uint8_t *, uint32_t, uint32_t))funcStorage0)(data, len, wrencmd);
+}
+
+void set_flash_qspi_flag(bool bSet)
 {
 	uint8_t buffer_rd[2] = {0x05, 0};
 	flashio(buffer_rd, 2, 0);
 
-	uint8_t status_1 = buffer_rd[1];
+	uint8_t status_reg = buffer_rd[1];
 
-	buffer_rd[0] = 0x35;
-	flashio(buffer_rd, 2, 0);
+	/* Enable QSPI on MX25R1635 FLASH IC*/
+	if(bSet)
+		status_reg |= (1 << 6);
+	else
+		status_reg &= ~(1 << 6);
 
-	uint8_t status_2 = buffer_rd[1];
+	uint8_t buffer_wr[2] = {0x01, status_reg};
+	flashio(buffer_wr, 2, 0x6);
 
-	/* Enable QSPI */
-	status_2 |= (1 << 1);
-
-	uint8_t buffer_wr[3] = {0x01, status_1, status_2};
-	flashio(buffer_wr, 3, 1);
 }
 
 void set_flash_latency(uint8_t value)
@@ -297,199 +302,15 @@ void cmd_read_flash_id()
 	putchar('\n');
 }
 
-// --------------------------------------------------------
 
-uint8_t cmd_read_flash_regs_print(uint32_t addr, const char *name)
+void cmd_read_status_reg()
 {
-	set_flash_latency(8);
+	uint8_t buffer[2] = {0x05, /* zeros */};
+	flashio(buffer, 2, 0);
 
-	uint8_t buffer[6] = {0x65, addr >> 16, addr >> 8, addr, 0, 0};
-	flashio(buffer, 6, 0);
-
-	print("0x");
-	print_hex(addr, 6);
-	print(" ");
-	print(name);
-	print(" 0x");
-	print_hex(buffer[5], 2);
-	print("\n");
-
-	return buffer[5];
-}
-
-void cmd_read_flash_regs()
-{
-	print("\n");
-	uint8_t sr1v = cmd_read_flash_regs_print(0x800000, "SR1V");
-	uint8_t sr2v = cmd_read_flash_regs_print(0x800001, "SR2V");
-	uint8_t cr1v = cmd_read_flash_regs_print(0x800002, "CR1V");
-	uint8_t cr2v = cmd_read_flash_regs_print(0x800003, "CR2V");
-	uint8_t cr3v = cmd_read_flash_regs_print(0x800004, "CR3V");
-	uint8_t vdlp = cmd_read_flash_regs_print(0x800005, "VDLP");
-}
-
-// --------------------------------------------------------
-
-uint32_t cmd_benchmark(bool verbose, uint32_t *instns_p)
-{
-	uint8_t data[256];
-	uint32_t *words = (void *)data;
-
-	uint32_t x32 = 314159265;
-
-	uint32_t cycles_begin, cycles_end;
-	uint32_t instns_begin, instns_end;
-	__asm__ volatile("rdcycle %0"
-					 : "=r"(cycles_begin));
-	__asm__ volatile("rdinstret %0"
-					 : "=r"(instns_begin));
-
-	for (int i = 0; i < 20; i++)
-	{
-		for (int k = 0; k < 256; k++)
-		{
-			x32 ^= x32 << 13;
-			x32 ^= x32 >> 17;
-			x32 ^= x32 << 5;
-			data[k] = x32;
-		}
-
-		for (int k = 0, p = 0; k < 256; k++)
-		{
-			if (data[k])
-				data[p++] = k;
-		}
-
-		for (int k = 0, p = 0; k < 64; k++)
-		{
-			x32 = x32 ^ words[k];
-		}
-	}
-
-	__asm__ volatile("rdcycle %0"
-					 : "=r"(cycles_end));
-	__asm__ volatile("rdinstret %0"
-					 : "=r"(instns_end));
-
-	if (verbose)
-	{
-		print("Cycles: 0x");
-		print_hex(cycles_end - cycles_begin, 8);
-		putchar('\n');
-
-		print("Instns: 0x");
-		print_hex(instns_end - instns_begin, 8);
-		putchar('\n');
-
-		print("Chksum: 0x");
-		print_hex(x32, 8);
-		putchar('\n');
-	}
-
-	if (instns_p)
-		*instns_p = instns_end - instns_begin;
-
-	return cycles_end - cycles_begin;
-}
-
-// --------------------------------------------------------
-
-void cmd_benchmark_all()
-{
-	uint32_t instns = 0;
-
-	print("default        ");
-	reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00000000;
-	print(": ");
-	print_hex(cmd_benchmark(false, &instns), 8);
-	putchar('\n');
-
-	for (int i = 8; i > 0; i--)
-	{
-		print("dspi-");
-		print_dec(i);
-		print("         ");
-
-		set_flash_latency(i);
-		reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00400000;
-
-		print(": ");
-		print_hex(cmd_benchmark(false, &instns), 8);
-		putchar('\n');
-	}
-
-	for (int i = 8; i > 0; i--)
-	{
-		print("dspi-crm-");
-		print_dec(i);
-		print("     ");
-
-		set_flash_latency(i);
-		reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00500000;
-
-		print(": ");
-		print_hex(cmd_benchmark(false, &instns), 8);
-		putchar('\n');
-	}
-
-	for (int i = 8; i > 0; i--)
-	{
-		print("qspi-");
-		print_dec(i);
-		print("         ");
-
-		set_flash_latency(i);
-		reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00200000;
-
-		print(": ");
-		print_hex(cmd_benchmark(false, &instns), 8);
-		putchar('\n');
-	}
-
-	for (int i = 8; i > 0; i--)
-	{
-		print("qspi-crm-");
-		print_dec(i);
-		print("     ");
-
-		set_flash_latency(i);
-		reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00300000;
-
-		print(": ");
-		print_hex(cmd_benchmark(false, &instns), 8);
-		putchar('\n');
-	}
-
-	for (int i = 8; i > 0; i--)
-	{
-		print("qspi-ddr-");
-		print_dec(i);
-		print("     ");
-
-		set_flash_latency(i);
-		reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00600000;
-
-		print(": ");
-		print_hex(cmd_benchmark(false, &instns), 8);
-		putchar('\n');
-	}
-
-	for (int i = 8; i > 0; i--)
-	{
-		print("qspi-ddr-crm-");
-		print_dec(i);
-		print(" ");
-
-		set_flash_latency(i);
-		reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00700000;
-
-		print(": ");
-		print_hex(cmd_benchmark(false, &instns), 8);
-		putchar('\n');
-	}
-
-	print("instns         : ");
-	print_hex(instns, 8);
+	print("Status Reg: ");
+	print_hex(buffer[1], 2);
+	
 	putchar('\n');
 }
 
@@ -532,7 +353,6 @@ void put_dump(const BYTE *buff, DWORD ofs, WORD cnt)
 	{
 		print(" ");
 		print_hex(buff[i], 2);
-		//xprintf(PSTR(" %02X"), buff[i]);
 	}
 
 	print(" ");
@@ -583,18 +403,21 @@ int flip = 0;
 
 void hram_test()
 {
-	static uint32_t counter;
+	static uint32_t counter = 0;
+	uint32_t reader;
 
 	*((uint32_t *)0x04000000) = 0x12345678;
 	*((uint32_t *)0x04000004) = 0xAAAAAAAA;
 	*((uint32_t *)0x04000008) = 0x55555555;
 	*((uint32_t *)0x0400000C) = 0x01020408;
 
-	counter = *((uint32_t *)0x04000000);
-	counter = *((uint32_t *)0x04000004);
-	counter = *((uint32_t *)0x04000008);
-	counter = *((uint32_t *)0x0400000C);
+	*((uint32_t*) 0x04000010) = counter++;
+
 	
+	dump((const BYTE*)0x04000000, 0);
+}
+
+void hram_dump(){
 	dump((const BYTE*)0x04000000, 0);
 }
 
@@ -659,7 +482,8 @@ void continuousCapture()
 		/* Capture our image length into external hyperRAM */
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
 		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
-		//CCC_STREAM_BUF_SIZE = 320 * 256 * 2;
+		
+		/* Set our pixel size to */
 		CCC_STREAM_BUF_SIZE = pixel_cnt * 2;
 		CCC_STREAM_BURST_SIZE = 8;
 
@@ -742,15 +566,21 @@ void main()
 		*dest++ = 0;
 	}
 	UART0_SETUP = 417;
-	//set_flash_qspi_flag();
+	
 
-	//set_flash_latency(4);
-	//reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00300000;
+	cmd_read_flash_id();
 
-	/* Reduce latency for HyperRAM Writes/Reads */
-	//HRAM0_CFG = 0x8fe40000;
+	set_flash_qspi_flag(true);
+	set_flash_latency(4);
+	
+	/* Enable QSPI mode */ 
+	reg_spictrl = (reg_spictrl & ~0x00700000) | 0x00200000;
+	//reg_spictrl = reg_spictrl | 0x00100000;
+	
+	
+	HRAM0_CFG = 0x8fe40000;
 
-	//continuousCapture();
+	continuousCapture();
 
 
 
@@ -775,7 +605,7 @@ void main()
 		print("\n");
 		print("Select an action:\n");
 		print("\n");
-		print("   [1] FATFS Write\n");
+		print(" [1] FATFS Write\n");
 		print("\n");
 
 		for (int rep = 10; rep > 0; rep--)
@@ -790,6 +620,17 @@ void main()
 			{
 			case '1':
 				hram_test();
+				break;
+			case '2':
+				hram_dump();
+				break;
+			case '3':
+				/* Reduce latency for HyperRAM Writes/Reads */
+				HRAM0_CFG = 0x8fe40000;
+				break;
+			case '4':
+				/* Default latency for HyperRAM Writes/Reads */
+				HRAM0_CFG = 0x8f1f0000;
 				break;
 			default:
 				continue;

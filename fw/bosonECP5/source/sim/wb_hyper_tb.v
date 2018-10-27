@@ -99,7 +99,7 @@ wb_bfm_master #(
 
 	//	bfm_cfg.write(4'h0,8'h04,4'hF, err);
 	//	bfm_cfg.write(4'h4,8'h0a,4'hF, err);	
-	//	bfm_cfg.write(4'h8,32'h8fe4_0000,4'hF, err);
+	    
 		
 		#1000
 		//bfm_cfg.read(4'h0,data, err);
@@ -128,6 +128,33 @@ wb_bfm_master #(
 
 		bfm.read_burst_comp(0,0,4'hF, 3'b010, 2'b00, 4, err);
 		
+
+		bfm_cfg.write(4'h0,32'h8fe4_0000,4'hF, err);
+
+
+		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
+		#350
+		bfm.read(32'h0000_0000, data, err);	
+		#500
+		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
+		#500 
+		bfm.read(32'h0000_0000, data, err);	
+		#500
+
+
+		bfm.write_data[0] = 32'h01020304;
+		bfm.write_data[1] = 32'h05060708;
+		bfm.write_data[2] = 32'h090a0b0c;
+		bfm.write_data[3] = 32'h0d0e0f00;
+
+	
+		bfm.write_burst(0,0,4'hF, 3'b010, 2'b00, 4, err);
+
+	    #100
+
+		bfm.read_burst_comp(0,0,4'hF, 3'b010, 2'b00, 4, err);
+		
+
 		#1000 done <= 1;
 	end
 

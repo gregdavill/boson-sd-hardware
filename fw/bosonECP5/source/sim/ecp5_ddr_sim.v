@@ -54,8 +54,8 @@ module IDDRX1F
 
 	always @(posedge SCLK) begin
 		Q_pos_f <= D;
-		Q0 <= Q_pos_f;
-		Q1 <= Q_neg_ff;
+		Q1 <= Q_pos_f;
+		Q0 <= Q_neg_ff;
 	end
 
 	always @(negedge SCLK) begin

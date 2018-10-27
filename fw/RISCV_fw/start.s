@@ -52,8 +52,7 @@ flashio_worker_begin:
 li   t0, 0x02000000
 
 # Set CS high, IO0 is output
-# Set IO2/3 to output HIGH (Avoid external resistors)
-li   t1, 0x0D2C
+li   t1, 0x120
 sh   t1, 0(t0)
 
 # Enable Manual SPI Ctrl
@@ -65,7 +64,6 @@ li   t5, 8
 andi t2, a2, 0xff
 flashio_worker_L4:
 srli t4, t2, 7
-ori  t4, t4, 0x0C
 sb   t4, 0(t0)
 ori  t4, t4, 0x10
 sb   t4, 0(t0)
@@ -82,7 +80,6 @@ li   t5, 8
 lbu  t2, 0(a0)
 flashio_worker_L2:
 srli t4, t2, 7
-ori  t4, t4, 0x0C
 sb   t4, 0(t0)
 ori  t4, t4, 0x10
 sb   t4, 0(t0)
@@ -98,7 +95,21 @@ sb   t2, 0(a0)
 addi a0, a0, 1
 addi a1, a1, -1
 j    flashio_worker_L1
+
+
 flashio_worker_L3:
+beqz a2, flashio_worker_L5
+li   t2, 0x05
+sb   zero, 0(t0)
+sb   t2, 4(t0)
+sb   t2, 4(t0)
+lb   t2, 4(t0)
+sb   t1, 0(t0)
+andi t2,t2,0x01
+bnez t2, flashio_worker_L3
+
+
+flashio_worker_L5:
 
 # Back to MEMIO mode
 li   t1, 0x80

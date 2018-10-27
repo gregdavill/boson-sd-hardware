@@ -148,6 +148,9 @@ module spimemio (
 					end
 				end
 			end else if(wb_spi_conf_adr_i[2] == 1) begin
+				wb_spi_conf_dat_o <= rx_data;
+				wb_spi_conf_ack_o <= 1'b1;
+
 				if(wb_spi_conf_we_i) begin
 					if(wb_spi_conf_sel_i == 4'hF) begin
 						tx_data <= wb_spi_conf_dat_i[30:0];
@@ -168,8 +171,6 @@ module spimemio (
 
 					
 				end
-				wb_spi_conf_dat_o <= rx_data;
-				wb_spi_conf_ack_o <= 1'b1;
 			end
 		end
 
@@ -180,10 +181,8 @@ module spimemio (
 				rx_data <= {rx_data[29:0], flash_io1_di};
 				config_do[0] <= tx_data[30];
 			end
-				
-
+			
 			config_clk <= !config_count[0];
-
 			config_count <= config_count - 1'b1;	
 		end
 		
