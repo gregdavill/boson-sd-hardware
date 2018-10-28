@@ -195,7 +195,6 @@ module hyper_xface_pll
   reg          cs_l_reg_p2;
   reg          cs_l_reg_p3;
   wire         dram_ck_loc;
-  reg          dram_ck_en;
   reg          rd_done;
   reg          rd_burst_en_sr;
   reg          rd_first_byte;
@@ -760,17 +759,16 @@ ecp_oddr u0_xil_oddr
   .rst       (reset )
 );
 
-
-
-always @(posedge clk) begin
+reg dram_ck_en;
+always @(posedge dram_ck_loc)
 	dram_ck_en <= ~cs_l_reg;
-end
+
 
 
 ecp_oddr u1_xil_oddr
 (
   .clk       ( dram_ck_loc         ),
-  .din_ris   ( 1'b1    ),
+  .din_ris   ( dram_ck_en   ),
   .din_fal   ( 1'b0                ),
   .dout      ( dram_ck             ),
   .rst       (reset                )
@@ -780,7 +778,7 @@ ecp_oddr u1_xil_oddr
 ecp_oddr u2_xil_oddr
 (
   .clk       ( dram_ck_loc          ),
-  .din_ris   ( 1'b0    ),
+  .din_ris   ( ~dram_ck_en    ),
   .din_fal   ( 1'b1                 ),
   .dout      ( dram_ck_n            ),
   .rst       (reset                 )
