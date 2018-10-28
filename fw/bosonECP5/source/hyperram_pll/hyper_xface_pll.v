@@ -602,7 +602,7 @@ always @ ( posedge clk ) begin : proc_rd_sr
    dram_dq_in_fal_p1   <= dram_dq_in_fal[7:0];
    if ( rd_burst_en_sr | rd_first_byte ) begin
      if ( ( dram_rwds_in_fal == 1 || simulation_en == 1 ) 
-          && cycle_len > 8 ) begin
+          && cycle_len > 7 ) begin
        rd_word_cnt <= ~ rd_word_cnt;
        if ( rd_word_cnt == 1 ) begin
          rd_d   <= { dram_dq_in_fal_p1[7:0],
@@ -759,16 +759,16 @@ ecp_oddr u0_xil_oddr
   .rst       (reset )
 );
 
-reg dram_ck_en;
-always @(posedge dram_ck_loc)
-	dram_ck_en <= ~cs_l_reg;
+//reg dram_ck_en;
+//always @(posedge dram_ck_loc)
+//	dram_ck_en <= ~cs_l_reg;
 
 
 
 ecp_oddr u1_xil_oddr
 (
   .clk       ( dram_ck_loc         ),
-  .din_ris   ( dram_ck_en   ),
+  .din_ris   ( 1'b1   ),
   .din_fal   ( 1'b0                ),
   .dout      ( dram_ck             ),
   .rst       (reset                )
@@ -778,7 +778,7 @@ ecp_oddr u1_xil_oddr
 ecp_oddr u2_xil_oddr
 (
   .clk       ( dram_ck_loc          ),
-  .din_ris   ( ~dram_ck_en    ),
+  .din_ris   ( 1'b0    ),
   .din_fal   ( 1'b1                 ),
   .dout      ( dram_ck_n            ),
   .rst       (reset                 )

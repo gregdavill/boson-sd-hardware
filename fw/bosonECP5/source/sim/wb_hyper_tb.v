@@ -131,14 +131,18 @@ wb_bfm_master #(
 
 		bfm_cfg.write(4'h0,32'h8fe4_0000,4'hF, err);
 
-
-		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
 		#350
-		bfm.read(32'h0000_0000, data, err);	
-		#500
-		bfm.write(32'h0000_0000, 32'h12345678, 4'hF, err);	
-		#500 
-		bfm.read(32'h0000_0000, data, err);	
+		bfm.write(32'h0008_0000, 32'h12345678, 4'hF, err);	
+		#50
+		bfm.write(32'h0008_0004, 32'h12345678, 4'hF, err);	
+		#50
+		bfm.write(32'h0008_0008, 32'h12345678, 4'hF, err);	
+		#50
+		bfm.write(32'h0008_000c, 32'h12345678, 4'hF, err);	
+		#50
+		
+		bfm.read(32'h0008_0000, data, err);	
+		bfm.read(32'h0008_0004, data, err);	
 		#500
 
 

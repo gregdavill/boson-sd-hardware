@@ -363,7 +363,7 @@ DSTATUS disk_initialize(BYTE pdrv)
 	}
 
 	/* Set clock speed to 24MHz */
-	SDC_CLOCK_DIVIDER = 1;
+	SDC_CLOCK_DIVIDER = 5;
 
 	Stat &= ~STA_NOINIT; /* Clear STA_NOINIT */
 	return Stat;
@@ -417,11 +417,13 @@ DRESULT disk_read(
 	SDC_DATA_EVENT_STATUS = 0;
 
 	cmd = (count > 1) ? CMD18 : CMD17;		  /* Transfer type: Single block or Multiple block */
-	if (send_cmd(cmd, sector, 1 | 0x4, &resp) /* Start to read */
+	if (!send_cmd(cmd, sector, 1 | 0x4, &resp) /* Start to read */
 		&& !(resp & 0xC0580000))
 	{
+		dump(buff, resp);
+
 		/* What errors could we see when reading? */
-		//return RES_ERROR;
+		return RES_ERROR;
 		
 	}
 
@@ -435,12 +437,12 @@ DRESULT disk_read(
 		send_cmd(CMD12, 0, 1, &resp);
 	}
 
+
 	/* Timeout or CRC error */
 	if (!(SDC_DATA_EVENT_STATUS & 1))
 	{
 		return RES_ERROR;
 	}
-
 
 	return RES_OK;
 	//return count ? RES_ERROR : RES_OK;

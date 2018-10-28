@@ -3220,7 +3220,7 @@ static FRESULT find_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 
 	/* Check if the filesystem object is valid or not */
 	fs = FatFs[vol];					/* Get pointer to the filesystem object */
-	//if (fs == 0) return FR_NOT_ENABLED;		/* Is the filesystem object available? */
+	if (fs == 0) return FR_NOT_ENABLED;		/* Is the filesystem object available? */
 #if FF_FS_REENTRANT
 	if (!lock_fs(fs)) return FR_TIMEOUT;	/* Lock the volume */
 #endif

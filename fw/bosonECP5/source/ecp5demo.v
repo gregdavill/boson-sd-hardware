@@ -591,6 +591,22 @@ module ecp5demo (
 		
 		.dbg_out()
 	);
+	
+	
+	wb_crc32 crc32 (
+		// WISHBONE common
+		.wb_clk_i          (wb_clk), 
+		.wb_rst_i          (wb_rst), 
+		// WISHBONE slave
+		.wb_dat_i          (wb_m2s_crc32_dat), 
+		.wb_dat_o          (wb_s2m_crc32_dat),
+		.wb_adr_i          (wb_m2s_crc32_adr), 
+		.wb_sel_i          (wb_m2s_crc32_sel), 
+		.wb_we_i           (wb_m2s_crc32_we ), 
+		.wb_cyc_i          (wb_m2s_crc32_cyc), 
+		.wb_stb_i          (wb_m2s_crc32_stb), 
+		.wb_ack_o          (wb_s2m_crc32_ack));
+		
 
 
 	

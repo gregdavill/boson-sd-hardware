@@ -423,19 +423,23 @@ void hram_dump(){
 
 
 void hram_fill() {
-	const uint32_t fill_value = 0x01020304;
+	static uint32_t fill_value = 0x04030201;
+	static uint8_t value;
+	const uint32_t len = 64*1024;
 
-	volatile uint32_t* hram_ptr = HRAM0;
+	fill_value = (value + 3) << 24 | (value + 2) << 16 | (value + 1) << 8 | (value);
+
+	volatile uint32_t* hram_ptr = (uint32_t *)0x04000000;
 	uint32_t error_count = 0;
 
-/* Fill */	
-	for(uint32_t i = 0; i < 32*1024; i++){
+	/* Fill */	
+	for(uint32_t i = 0; i < len; i++){
 		hram_ptr[i] = fill_value;
 	}
 
 
-/* Check */
-	for(uint32_t i = 0; i < 32*1024; i++){
+	/* Check */
+	for(uint32_t i = 0; i < len; i++){
 		uint32_t read_val = hram_ptr[i];
 		if(read_val != fill_value)
 		{
@@ -495,6 +499,8 @@ void continuousCapture()
 	char filename[13];
 	int image_number = 0;
 
+	dly_us(500000);
+
 	FRESULT res;
 	res = f_mount(&FatFs, "", 0); /* Give a work area to the default drive */
 
@@ -536,7 +542,7 @@ void continuousCapture()
 
 		/* Wait for IRQ signal to be set */
 		reg_leds = 0x00010001;
-		while (CCC_STREAM_STATUS != 2)
+		while (!(CCC_STREAM_STATUS & 2))
 		{
 			print(".");
 		}
@@ -623,7 +629,7 @@ void main()
 	//reg_spictrl = reg_spictrl | 0x00100000;
 	
 	
-	HRAM0_CFG = 0x8fe40000;
+	HRAM0_CFG = 0x8f1f0000;
 
 
 

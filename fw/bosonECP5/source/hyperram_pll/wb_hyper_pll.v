@@ -66,7 +66,7 @@ assign read_burst_en = (wb_cti_i == 3'b010) && wb_cyc_i;
 /* translate from wishbone to hyper_xface */
 always @(posedge wb_clk_i) begin
 	/* Generate our first_byte signal */
-	if(wb_cyc_i == 0)
+	if((wb_cyc_i && wb_stb_i) == 0)
 		ack_count <= 0;
 	else if(wb_ack_o)
 		ack_count <= ack_count + 1;
@@ -95,8 +95,8 @@ end
 
 wire wb_read_req;
 wire wb_write_req;
-assign wb_read_req = wb_stb_i & wb_cyc_i & !wb_we_i & !wb_ack_o;
-assign wb_write_req = wb_stb_i & wb_cyc_i & wb_we_i & !wb_ack_o;
+assign wb_read_req = wb_stb_i & wb_cyc_i & !wb_we_i & !wb_ack_o & !{busy,busy_sr[2]};
+assign wb_write_req = wb_stb_i & wb_cyc_i & wb_we_i & !wb_ack_o & !{busy,busy_sr[2]};
 
 reg ack_f;
 reg [2:0] busy_sr;
