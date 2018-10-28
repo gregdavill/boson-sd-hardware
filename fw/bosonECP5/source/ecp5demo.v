@@ -327,6 +327,7 @@ module ecp5demo (
 
 	wire hb_rwds_del_i;
 	wire [7:0] hb_dq_del_i;
+	wire hb_clkn_o, hb_clkp_o;
 
 
 		wb_hyper wb_hyper (
@@ -350,14 +351,14 @@ module ecp5demo (
 		.wb_cfg_cyc_i (wb_m2s_hram0_cfg_cyc),
 		.wb_cfg_stb_i (wb_m2s_hram0_cfg_stb),
 		.wb_cfg_ack_o (wb_s2m_hram0_cfg_ack),
-		.hb_clk_o     (hb_clk_o            ),
-		.hb_clk_n_o   (hb_clk_n_o          ),
+		.hb_clk_o     (hb_clkp_o            ),
+		.hb_clk_n_o   (hb_clkn_o          ),
 		.hb_cs_o      (hb_cs_o             ),
 		.hb_rwds_o    (hb_rwds_o           ),
-		.hb_rwds_i    (hb_rwds_del_i       ),
+		.hb_rwds_i    (hb_rwds_i       ),
 		.hb_rwds_dir  (hb_rwds_dir         ),
 		.hb_dq_o      (hb_dq_o             ),
-		.hb_dq_i      (hb_dq_del_i         ),
+		.hb_dq_i      (hb_dq_i         ),
 		.hb_dq_dir    (hb_dq_dir           ),
 		.hb_rst_o     (hb_rst_o            ),
 		.sump_dbg     (sump_dbg            )
@@ -365,19 +366,19 @@ module ecp5demo (
 
 		
 		
-	DELAYG  #(
-		.DEL_MODE("SCLK_CENTERED")
-	) rwds_delay (
-		.A(hb_rwds_i), /* Input */
-		.Z(hb_rwds_del_i)
-	);
+//	DELAYG  #(
+//		.DEL_MODE("SCLK_ALIGNED")
+//	) rwds_delay (
+//		.A(hb_rwds_i), /* Input */
+//		.Z(hb_rwds_del_i)
+//	);
 
-	DELAYG  #(
-		.DEL_MODE("SCLK_CENTERED")
-	) dq_delay [7:0] (
-		.A(hb_dq_i), /* Input */
-		.Z(hb_dq_del_i)
-	);
+//	DELAYG  #(
+//	.DEL_MODE("SCLK_ALIGNED")
+//	) dq_delay [7:0] (
+///		.A(hb_dq_i), /* Input */
+//		.Z(hb_dq_del_i)
+//	);
 
 	BBPU hr_dq_b[7:0] (
 		.B(HRAM_DQ),
@@ -394,13 +395,21 @@ module ecp5demo (
 		.O(hb_rwds_i)
 	);
 
+
+//	DELAYG  #(
+//		.DEL_VALUE(31)
+//	) ck_delay [1:0] (
+//		.A({hb_clk_n_o, hb_clk_o}), /* Input */
+//		.Z({hb_clkn_o, hb_clkp_o})
+//	);
+
 	OB hr_ck_a (
 		.O(HRAM_CK[0]),
-		.I(hb_clk_o)
+		.I(hb_clkp_o)
 	);
 	OB hr_ck_b (
 		.O(HRAM_CK[1]),
-		.I(hb_clk_n_o)
+		.I(hb_clkn_o)
 	);
 	
 

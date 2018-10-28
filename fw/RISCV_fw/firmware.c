@@ -422,6 +422,41 @@ void hram_dump(){
 }
 
 
+void hram_fill() {
+	const uint32_t fill_value = 0x01020304;
+
+	volatile uint32_t* hram_ptr = HRAM0;
+	uint32_t error_count = 0;
+
+/* Fill */	
+	for(uint32_t i = 0; i < 32*1024; i++){
+		hram_ptr[i] = fill_value;
+	}
+
+
+/* Check */
+	for(uint32_t i = 0; i < 32*1024; i++){
+		uint32_t read_val = hram_ptr[i];
+		if(read_val != fill_value)
+		{
+			error_count++;
+			print("Error @ 0x");
+			print_hex(i, 8);
+			print(", 0x");
+			print_hex(read_val, 8);
+			print(" != 0x");
+			print_hex(fill_value,8);
+			print(" (re-read: 0x");
+			print_hex(hram_ptr[i],8);
+			print(")\r\n");
+		}
+	}
+
+	print("\r\nTotal Errors: ");
+	print_dec(error_count);
+	print("\r\n");
+}
+
 void blink_led(int numBlinks)
 {
 
@@ -463,6 +498,7 @@ void continuousCapture()
 	FRESULT res;
 	res = f_mount(&FatFs, "", 0); /* Give a work area to the default drive */
 
+	print("Waiting for frame to determine size\r\n");
 
 	/* Determine what camera we are connected to */
 	uint32_t frame_cnt = CC_FRAME_CNT;
@@ -471,9 +507,14 @@ void continuousCapture()
 	/* record last frame size in pixels */
 	uint32_t pixel_cnt = CC_PIXEL_CNT;
 
+
+	print("Frame captured\r\n");
+
 	while (1)
 	{
 
+		
+			print("New Frame");
 		set_filename(filename, image_number++);
 
 		/* sw reset of wb_streamer component */
@@ -497,6 +538,7 @@ void continuousCapture()
 		reg_leds = 0x00010001;
 		while (CCC_STREAM_STATUS != 2)
 		{
+			print(".");
 		}
 		reg_leds = 0x00010000;
 
@@ -546,6 +588,9 @@ void continuousCapture()
 		{
 			blink_led(5);
 		}
+
+		
+			print("\r\nSaved.\r\n");
 	}
 }
 
@@ -580,13 +625,12 @@ void main()
 	
 	HRAM0_CFG = 0x8fe40000;
 
-	continuousCapture();
 
 
 
-	while (getchar_prompt("Press ENTER to continue..\n") != '\r')
-	{ /* wait */
-	}
+	//while (getchar_prompt("Press ENTER to continue..\n") != '\r')
+	//{ /* wait */
+	//}
 
 	print("\r\n");
 	print("  __               __            __                 \r\n");
@@ -598,6 +642,8 @@ void main()
 		  " "__TIME__
 		  "\r\n");
 
+	//continuousCapture();
+	
 	while (1)
 	{
 		print("\n");
@@ -605,7 +651,11 @@ void main()
 		print("\n");
 		print("Select an action:\n");
 		print("\n");
-		print(" [1] FATFS Write\n");
+		print(" [1] Write\n");
+		print(" [2] Dump\n");
+		print(" [3] Fill and check\n");
+		print(" [4] Low Latency\n");
+		print(" [5] Default Latency\n");
 		print("\n");
 
 		for (int rep = 10; rep > 0; rep--)
@@ -625,10 +675,13 @@ void main()
 				hram_dump();
 				break;
 			case '3':
+				hram_fill();
+				break;
+			case '4':
 				/* Reduce latency for HyperRAM Writes/Reads */
 				HRAM0_CFG = 0x8fe40000;
 				break;
-			case '4':
+			case '5':
 				/* Default latency for HyperRAM Writes/Reads */
 				HRAM0_CFG = 0x8f1f0000;
 				break;

@@ -7,6 +7,10 @@
 
 #define HRAM0 (uint32_t *)(0x04000000)
 
+
+#define HRAM0_CFG (*(volatile uint32_t *)(0x02200000))
+
+
 #define SPI_REG *(uint32_t *)0x02000000
 #define SPI_DATA *(uint8_t *)0x02000004
 #define SPI_DATA32 *(uint32_t *)0x02000004
@@ -176,6 +180,7 @@ void main()
 	GPIO = 0x00010000 | flip;
 
 	uartInit();
+	HRAM0_CFG = 0x8fe40000;
 
 	print("\r\nBosonBootloader " __DATE__ " " __TIME__ "\r\n");
 

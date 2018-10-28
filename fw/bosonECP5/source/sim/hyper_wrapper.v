@@ -15,8 +15,10 @@ module hyper_wrapper (
 
 
 /* Patch inout signals through to seperate input/output/dir channels */
-assign hb_rwds_i = rwds;
-assign hb_dq_i = dq;
+assign #1000 hb_rwds_i = rwds;
+assign #5500 hb_dq_i = dq;
+//assign hb_rwds_i = rwds;
+//assign hb_dq_i = dq;
 
 reg dq_dir;
 reg rwds_dir;

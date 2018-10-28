@@ -300,7 +300,7 @@ always @ ( posedge clk ) begin : proc_latency_timing
  begin
    if ( wr_req == 1 && mem_or_reg == 1 && addr == 32'h00000800 ) begin
      if          ( wr_d[23:20] == 4'h1 ) begin
-       latency_cfg <= 16'h0A07;
+       latency_cfg <= 16'h0D0A;
      end else if ( wr_d[23:20] == 4'h0 ) begin
        latency_cfg <= 16'h0806;
      end else if ( wr_d[23:20] == 4'hF ) begin
@@ -602,8 +602,8 @@ always @ ( posedge clk ) begin : proc_rd_sr
    dram_dq_in_ris_p1   <= dram_dq_in_ris[7:0];
    dram_dq_in_fal_p1   <= dram_dq_in_fal[7:0];
    if ( rd_burst_en_sr | rd_first_byte ) begin
-     if ( ( ( dram_rwds_in_fal == 1 && dram_rwds_in_ris == 0) || simulation_en == 1 ) 
-          && rd_dir_jk_p4 == 1 ) begin
+     if ( ( dram_rwds_in_fal == 1 || simulation_en == 1 ) 
+          && cycle_len > 8 ) begin
        rd_word_cnt <= ~ rd_word_cnt;
        if ( rd_word_cnt == 1 ) begin
          rd_d   <= { dram_dq_in_fal_p1[7:0],
@@ -716,7 +716,7 @@ generate
 for ( i2=0; i2<=7; i2=i2+1 ) begin: gen_i2
  ecp_iddr u_xil_iddr
   (
-    .clk       ( clk                 ),
+    .clk       ( clk                ),
     .din       ( dram_dq_in[i2]      ),
     .dout_fal  ( dram_dq_in_ris[i2]  ),
     .dout_ris  ( dram_dq_in_fal[i2]  ),
@@ -726,7 +726,7 @@ end
 endgenerate
  ecp_iddr u0_xil_iddr
   (
-    .clk       ( clk                 ),
+    .clk       ( clk                ),
     .din       ( dram_rwds_in        ),
     .dout_fal  ( dram_rwds_in_ris    ),
     .dout_ris  ( dram_rwds_in_fal    ),

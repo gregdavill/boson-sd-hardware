@@ -1,4 +1,4 @@
-`timescale 1 us/1 us
+`timescale 1 ns/1 ns
 
 module top;
 
@@ -14,11 +14,11 @@ module top;
 
    reg	   wb_rst = 1'b1;
 
-   always #6 wb_clk <= ~wb_clk;
-   initial  #500 wb_rst <= 0;
+   always #10 wb_clk <= ~wb_clk;
+   initial  #500000 wb_rst <= 0;
 
 	always @(posedge wb_clk or negedge wb_clk)
-		#3 wb_clk90 <= wb_clk;
+		#4 wb_clk90 <= wb_clk;
 
 
 	reg done = 0;
