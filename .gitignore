@@ -38,8 +38,8 @@ archiv
 *.cmd
 *.cst
 *.fdc
-# *.htm
-# *.html
+*rpt.htm
+*tcl.html
 *.log
 *.ngd
 *.ngo
@@ -50,3 +50,15 @@ archiv
 *.xml
 # *.zip
 *~
+*.vcd
+*.tap
+
+# C build artifacts
+*.map
+*.bin
+*.lst
+*.elf
+*.out
+
+# gerbers
+outputs
