@@ -243,7 +243,7 @@ void main()
 		/* Copy binary data into the RAM */
 		uint8_t *ptr = (uint8_t *)HRAM0;
 		unsigned int bw = 0;
-		//uint32_t total_size = 0;
+		uint32_t total_size = 0;
 		
 		do
 		{
@@ -255,7 +255,7 @@ void main()
 			flip ^= true;	
 			GPIO = 0x00010000 | flip;
 
-//			total_size += bw;
+			total_size += bw;
 
 		}while((bw == 512) && (res == FR_OK));
 
@@ -282,13 +282,13 @@ void main()
 		print("\r\n");
 
 		/* TODO: CRC Check */
-	//	uint32_t *crc_ptr = HRAM0 + 8;
+		uint32_t *crc_ptr = HRAM0 + 8;
 		/* reset Value */
-	//	CRC32_CFG = 1;
+		CRC32_CFG = 1;
 
-	//	for(uint32_t i = 8; i < total_size/4; i++) {
-	//		CRC32_DATA = *crc_ptr++;
-	//	}
+		for(uint32_t i = 8; i < total_size/4; i++) {
+			CRC32_DATA = *crc_ptr++;
+		}
 
 		print("\r\nCRC:");
 		print_hex(CRC32_VALUE,8);

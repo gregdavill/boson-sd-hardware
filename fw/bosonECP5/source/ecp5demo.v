@@ -34,7 +34,7 @@ module ecp5demo (
 	input wire clk_input,
 
 	output wire ser_tx,
-	input wire ser_rx,
+	output wire ser_rx,
 	output wire ser_tx_dir,
 	output wire ser_rx_dir, 
 
@@ -182,8 +182,8 @@ module ecp5demo (
 	
 	assign led = gpio_reg[0];
 	
-	assign ser_tx_dir = 1;
-	assign ser_rx_dir = 0;
+	assign ser_tx_dir = 1'b1;
+	assign ser_rx_dir = 1'b0;
 	
 	wire sw_fpga_reset;
 	
@@ -277,7 +277,8 @@ module ecp5demo (
 	wire uart0_tx;
 	
 
-	assign uart0_rx = ser_rx;
+	//assign uart0_rx = ser_rx;
+	assign uart0_rx = 1'b1;
 	assign ser_tx = uart0_tx;
 
 
@@ -364,6 +365,8 @@ module ecp5demo (
 		.sump_dbg     (sump_dbg            )
 	);
 
+
+	assign ser_rx = sump_dbg[2];
 		
 		
 //	DELAYG  #(

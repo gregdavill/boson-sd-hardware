@@ -532,7 +532,7 @@ void continuousCapture()
 		
 		/* Set our pixel size to */
 		CCC_STREAM_BUF_SIZE = pixel_cnt * 2;
-		CCC_STREAM_BURST_SIZE = 8;
+		CCC_STREAM_BURST_SIZE = 64;
 
 		/* Enable the Stream DMA and clear IRQ bit*/
 		CCC_STREAM_STATUS = 3;
@@ -648,7 +648,7 @@ void main()
 		  " "__TIME__
 		  "\r\n");
 
-	//continuousCapture();
+	continuousCapture();
 	
 	while (1)
 	{

@@ -2,7 +2,7 @@
 <BaliProject version="3.2" title="bosonECP5" device="LFE5U-25F-6MG285C" default_implementation="impl1">
     <Options/>
     <Implementation title="impl1" dir="impl1" description="impl1" synthesis="synplify" default_strategy="Strategy1">
-        <Options def_top="OSC_TOP" top="ecp5demo"/>
+        <Options top="ecp5demo"/>
         <Source name="source/ecp5demo.v" type="Verilog" type_short="Verilog">
             <Options top_module="ecp5demo"/>
         </Source>
@@ -99,13 +99,13 @@
         <Source name="source/wbgpio.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/cmos_capture/cc_controller.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/cmos_capture/cc_controller.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/cmos_capture/cc_controller_wb.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/cmos_capture/cc_controller_wb.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="source/cmos_capture/cc_data_host.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="source/cmos_capture/cc_data_host.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="source/cmos_capture/sd_fifo_filler.v" type="Verilog" type_short="Verilog" excluded="TRUE">
@@ -265,6 +265,12 @@
             <Options/>
         </Source>
         <Source name="source/reset_reg.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/crc32/wb_crc32.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/crc32/CRC32_Ethernet_x32.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="bosonECP5.lpf" type="Logic Preference" type_short="LPF">
