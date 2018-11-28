@@ -34,7 +34,7 @@ module ecp5demo (
 	input wire clk_input,
 
 	output wire ser_tx,
-	output wire ser_rx,
+	input wire ser_rx,
 	output wire ser_tx_dir,
 	output wire ser_rx_dir, 
 
@@ -72,7 +72,7 @@ module ecp5demo (
 	input wire BOSON_HSYNC,
 	input wire BOSON_VALID,
 	output wire BOSON_RESET
-);
+); /* synthesis syn_useioff = 1 */;
 
 	wire clk,clk_90,pll_lock;
 	
@@ -277,8 +277,8 @@ module ecp5demo (
 	wire uart0_tx;
 	
 
-	//assign uart0_rx = ser_rx;
-	assign uart0_rx = 1'b1;
+	assign uart0_rx = ser_rx;
+	//assign uart0_rx = 1'b1;
 	assign ser_tx = uart0_tx;
 
 
@@ -366,7 +366,7 @@ module ecp5demo (
 	);
 
 
-	assign ser_rx = sump_dbg[2];
+	//assign ser_rx = sump_dbg[2];
 		
 		
 //	DELAYG  #(

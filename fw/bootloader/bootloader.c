@@ -218,12 +218,6 @@ void main()
 	FRESULT res;
 	res = f_mount(&FatFs, "", 1); /* Give a work area to the default drive */
 
-	print("\r\n");
-	print_hex(&FatFs,8);
-	print("\r\n");
-	print_hex(FatFs.win,8);
-	print("\r\n");
-
 	if(res != FR_OK){
 		print("Error Mounting SD card\r\n");
 		print_hex(res,2);
@@ -277,9 +271,11 @@ void main()
 		uint32_t flash_crc = *(uint32_t*)0x00000000;
 
 
-		print("\r\nfile CRC:");
+		print("\r\nfile Size: 0x");
+		print_hex(total_size,8);
+		print("\nCRC: 0x");
 		print_hex(file_crc,8);
-		print("\r\n");
+		print("\n");
 
 		/* TODO: CRC Check */
 		uint32_t *crc_ptr = HRAM0 + 8;
@@ -290,9 +286,62 @@ void main()
 			CRC32_DATA = *crc_ptr++;
 		}
 
-		print("\r\nCRC:");
+		print("\nCRC:");
 		print_hex(CRC32_VALUE,8);
-		print("\r\n");
+		print("\n");
+
+		/* TODO: CRC Check */
+		crc_ptr = HRAM0 + 8;
+		/* reset Value */
+		CRC32_CFG = 1;
+
+		for(uint32_t i = 8; i < total_size/4; i++) {
+			CRC32_DATA = *crc_ptr++;
+		}
+
+		print("CRC:");
+		print_hex(CRC32_VALUE,8);
+		print("\n");
+
+
+		CRC32_CFG = 1;
+		CRC32_DATA = 0x00000000;
+		print("CRC:");
+	print("CRC[0x00000000] = 0x");
+		print_hex(CRC32_VALUE,8);
+		print("\n");
+
+		CRC32_CFG = 1;
+		CRC32_DATA = 0x01020304;
+		print("CRC:");
+	print("CRC[0x01020304] = 0x");
+		print_hex(CRC32_VALUE,8);
+		print("\n");
+
+CRC32_CFG = 1;
+		CRC32_DATA = 0x04030201;
+		print("CRC:");
+	print("CRC[0x04030201] = 0x");
+		print_hex(CRC32_VALUE,8);
+		print("\n");
+
+uint32_t value = 0;
+ptr = &value;
+
+*ptr++ = 0x01;
+*ptr++ = 0x02;
+*ptr++ = 0x03;
+*ptr++ = 0x04;
+
+
+CRC32_CFG = 1;
+		CRC32_DATA = value;
+		print("CRC:");
+	print("CRC[0x01,0x02,0x03,0x04] = 0x");
+		print_hex(CRC32_VALUE,8);
+		print("\n");
+
+
 
 		/* likely that our files are equal. */
 		if(flash_crc == file_crc){

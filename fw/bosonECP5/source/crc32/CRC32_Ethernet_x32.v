@@ -67,17 +67,17 @@ module CRC32_Ethernet_x32(
 	wire[31:0] crc_not = ~crc;
 	assign crc_flipped = 
 	{
-		crc_not[24], crc_not[25], crc_not[26], crc_not[27],
-		crc_not[28], crc_not[29], crc_not[30], crc_not[31],
-
-		crc_not[16], crc_not[17], crc_not[18], crc_not[19],
-		crc_not[20], crc_not[21], crc_not[22], crc_not[23],
+		crc_not[0], crc_not[1], crc_not[2], crc_not[3],
+		crc_not[4], crc_not[5], crc_not[6], crc_not[7],
 
 		crc_not[8], crc_not[9], crc_not[10], crc_not[11],
 		crc_not[12], crc_not[13], crc_not[14], crc_not[15],
 
-		crc_not[0], crc_not[1], crc_not[2], crc_not[3],
-		crc_not[4], crc_not[5], crc_not[6], crc_not[7]
+		crc_not[16], crc_not[17], crc_not[18], crc_not[19],
+		crc_not[20], crc_not[21], crc_not[22], crc_not[23],
+
+		crc_not[24], crc_not[25], crc_not[26], crc_not[27],
+		crc_not[28], crc_not[29], crc_not[30], crc_not[31]
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

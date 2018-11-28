@@ -363,7 +363,7 @@ DSTATUS disk_initialize(BYTE pdrv)
 	}
 
 	/* Set clock speed to 24MHz */
-	SDC_CLOCK_DIVIDER = 5;
+	SDC_CLOCK_DIVIDER = 1;
 
 	Stat &= ~STA_NOINIT; /* Clear STA_NOINIT */
 	return Stat;

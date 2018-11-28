@@ -15,7 +15,7 @@ module top;
    reg	   wb_rst = 1'b1;
 
    always #10 wb_clk <= ~wb_clk;
-   initial  #500000 wb_rst <= 0;
+   initial  #100 wb_rst <= 0;
 
 	always @(posedge wb_clk or negedge wb_clk)
 		#4 wb_clk90 <= wb_clk;
@@ -85,8 +85,6 @@ wb_bfm_master #(
 
 		repeat (2) @(posedge wb_clk);
 
-		
-		#100
 		//bfm_cfg.read(4'h0,data, err);
 		//bfm_cfg.read(4'h4,data, err);
 		//bfm_cfg.read(4'h8,data, err);
@@ -98,7 +96,6 @@ wb_bfm_master #(
 		bfm.write(32'h0000_0000, 32'h04040404, 4'hF, err);	
 		bfm.read(32'h0008_0004, data, err);	
 	
-
 		#100 done <= 1;
 	end
 
