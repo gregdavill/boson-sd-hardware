@@ -4,6 +4,7 @@
 #include "FatFs/ff.h"
 #include "FatFs/diskio.h"
 
+#include "crc32.h"
 // a pointer to this is a null pointer, but the compiler does not
 // know that because "sram" is a linker symbol from sections.lds.
 extern uint32_t sram;
@@ -601,6 +602,42 @@ void continuousCapture()
 }
 
 
+void crc_test()
+{
+	crc32_clear();
+	print("\n CRC test Initial Value: 0x");
+	print_hex(crc32_value(), 8);
+	print(" \n");
+
+	crc32_input(0x00000000);
+	print("CRC[0x00000000] = 0x");
+	print_hex(crc32_value(), 8);
+	print(" \n");
+
+	crc32_clear();
+	crc32_input(0x01020304);
+	print("CRC[0x01020304] = 0x");
+	print_hex(crc32_value(), 8);
+	print(" \n");
+
+	crc32_clear();
+	crc32_input(0x04030201);
+	print("CRC[0x04030201] = 0x");
+	print_hex(crc32_value(), 8);
+	print(" \n");
+
+
+	crc32_clear();
+	uint32_t* crc_ptr = 0x04000000;
+	for(uint32_t i = 0; i < (768*1024); i++) {
+			crc32_input(*crc_ptr++);
+	}
+	print("CRC(mem) = 0x");
+	print_hex(crc32_value(), 8);
+	print(" \n");
+
+}
+
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
 
 void main()
@@ -619,7 +656,7 @@ void main()
 	UART0_SETUP = 417;
 	
 
-	cmd_read_flash_id();
+	//cmd_read_flash_id();
 
 	set_flash_qspi_flag(true);
 	set_flash_latency(4);
@@ -648,7 +685,7 @@ void main()
 		  " "__TIME__
 		  "\r\n");
 
-	continuousCapture();
+	//continuousCapture();
 	
 	while (1)
 	{
@@ -686,10 +723,16 @@ void main()
 			case '4':
 				/* Reduce latency for HyperRAM Writes/Reads */
 				HRAM0_CFG = 0x8fe40000;
+				print("\n New HyperRAM value = 0x8fe4");
 				break;
 			case '5':
 				/* Default latency for HyperRAM Writes/Reads */
 				HRAM0_CFG = 0x8f1f0000;
+				print("\n New HyperRAM value = 0x8f1f");
+				break;
+
+			case '6':
+				crc_test();
 				break;
 			default:
 				continue;

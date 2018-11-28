@@ -1,5 +1,8 @@
 #include "diskio.h" /* Common include file for FatFs and disk I/O layer */
 #include <stdint.h>
+#include "sd_cache.h"
+
+#define USE_CACHE (1)
 
 #define NULL (0)
 
@@ -368,6 +371,10 @@ DSTATUS disk_initialize(BYTE pdrv)
 	Stat &= ~STA_NOINIT; /* Clear STA_NOINIT */
 	return Stat;
 
+	/* Allocate 1Mb to the cache! */
+	sd_cache_init(0x04000000, 2048);
+
+
 di_fail:
 	print("Init Fail\r\n");
 	
@@ -408,6 +415,17 @@ DRESULT disk_read(
 	if (!wait_ready(500))
 		return RES_ERROR; /* Make sure that card is tran state */
 
+#ifdef USE_CACHE
+	if(count == 1){
+		if(sd_cache_read(buff, sector, 1))
+		{
+			/* Found a block in our cache */
+			/* The call already performs a capy into our buffer */
+			return RES_OK;
+		}
+	}
+#endif
+
 	/* Tell SDC DMA about out data */
 	SDC_DST_SRC_ADDRESS = (uint32_t)buff;
 	SDC_BLOCKSIZE = 0x1FF;
@@ -441,6 +459,16 @@ DRESULT disk_read(
 		return RES_ERROR;
 	}
 
+
+#ifdef USE_CACHE
+	/* We have read a block, add it to the cache */
+	if(count == 1){
+		if(sd_cache_create(buff, sector, 1))
+		{
+			/* Return true either way */
+		}
+	}
+#endif
 
 	return RES_OK;
 	//return count ? RES_ERROR : RES_OK;
@@ -518,6 +546,16 @@ DRESULT disk_write(
 	{
 		return RES_ERROR;
 	}
+
+#ifdef USE_CACHE
+	/* We have written a block, if this block exists in cache then update */
+	if(count == 1){
+		if(sd_cache_update(buff, sector, 1))
+		{
+			/* Return true either way */
+		}
+	}
+#endif
 
 	return RES_OK;
 }
