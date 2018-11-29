@@ -5,6 +5,7 @@
 #include "FatFs/diskio.h"
 
 #include "crc32.h"
+#include "profiler.h"
 // a pointer to this is a null pointer, but the compiler does not
 // know that because "sram" is a linker symbol from sections.lds.
 extern uint32_t sram;
@@ -50,6 +51,8 @@ extern uint32_t sram;
 
 void print(const char *p);
 
+
+profiler_t profilingCounter;
 
 // --------------------------------------------------------
 
@@ -527,6 +530,8 @@ void continuousCapture()
 		/* sw reset of wb_streamer component */
 		//CCC_STREAM_STATUS = 4;
 
+		profiler_start(&profilingCounter);
+
 		/* Capture our image length into external hyperRAM */
 		/* Burst size is in DWORDS, 8 = 16 clock cycles */
 		CCC_STREAM_START_ADR = (uint32_t)0x04000000;
@@ -552,8 +557,15 @@ void continuousCapture()
 		/* clear IRQ */
 		CCC_STREAM_STATUS = 2;
 
+		
+		profiler_stop(&profilingCounter);
+		print("Capture:");
+		print_hex(profiler_read(&profilingCounter), 8);
+		print("\r\n");
+
 		blink_led(1);
 
+		profiler_start(&profilingCounter);
 		UINT bw = 0;
 
 		/* Create a file */
@@ -590,6 +602,12 @@ void continuousCapture()
 				blink_led(2);
 			}
 		}
+
+		
+		profiler_stop(&profilingCounter);
+		print("Save:");
+		print_hex(profiler_read(&profilingCounter), 8);
+		print("\r\n");
 
 		if (res != FR_OK)
 		{

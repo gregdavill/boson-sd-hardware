@@ -262,86 +262,28 @@ void main()
 
 		/* File is loaded in RAM. */
 		/* Perform a CRC error check on the file to determine it's integrity */
-
-		
-
-		/* TODO: Update check? */
-
 		uint32_t file_crc = *(uint32_t*)HRAM0;
 		uint32_t flash_crc = *(uint32_t*)0x00000000;
 
 
-		print("\r\nfile Size: 0x");
+		print("\n\nFileSize: 0x");
 		print_hex(total_size,8);
-		print("\nCRC: 0x");
+		print("\nFileCRC32: 0x");
 		print_hex(file_crc,8);
 		print("\n");
 
 		/* TODO: CRC Check */
-		uint32_t *crc_ptr = HRAM0 + 8;
+		uint32_t *crc_ptr = HRAM0 + 1;
 		/* reset Value */
 		CRC32_CFG = 1;
 
-		for(uint32_t i = 8; i < total_size/4; i++) {
+		for(uint32_t i = 1; i < total_size/4; i++) {
 			CRC32_DATA = *crc_ptr++;
 		}
 
-		print("\nCRC:");
+		print("CalculatedCRC32= ");
 		print_hex(CRC32_VALUE,8);
 		print("\n");
-
-		/* TODO: CRC Check */
-		crc_ptr = HRAM0 + 8;
-		/* reset Value */
-		CRC32_CFG = 1;
-
-		for(uint32_t i = 8; i < total_size/4; i++) {
-			CRC32_DATA = *crc_ptr++;
-		}
-
-		print("CRC:");
-		print_hex(CRC32_VALUE,8);
-		print("\n");
-
-
-		CRC32_CFG = 1;
-		CRC32_DATA = 0x00000000;
-		print("CRC:");
-	print("CRC[0x00000000] = 0x");
-		print_hex(CRC32_VALUE,8);
-		print("\n");
-
-		CRC32_CFG = 1;
-		CRC32_DATA = 0x01020304;
-		print("CRC:");
-	print("CRC[0x01020304] = 0x");
-		print_hex(CRC32_VALUE,8);
-		print("\n");
-
-CRC32_CFG = 1;
-		CRC32_DATA = 0x04030201;
-		print("CRC:");
-	print("CRC[0x04030201] = 0x");
-		print_hex(CRC32_VALUE,8);
-		print("\n");
-
-uint32_t value = 0;
-ptr = &value;
-
-*ptr++ = 0x01;
-*ptr++ = 0x02;
-*ptr++ = 0x03;
-*ptr++ = 0x04;
-
-
-CRC32_CFG = 1;
-		CRC32_DATA = value;
-		print("CRC:");
-	print("CRC[0x01,0x02,0x03,0x04] = 0x");
-		print_hex(CRC32_VALUE,8);
-		print("\n");
-
-
 
 		/* likely that our files are equal. */
 		if(flash_crc == file_crc){
@@ -349,8 +291,8 @@ CRC32_CFG = 1;
 		//	((void (*)(void))0x000A0000)();
 		}
 		
-while(1);
-
+		while (1);
+		
 		/* We can save some space by only programming what we have available */
 		uint32_t len = ((uint32_t)ptr - (uint32_t)HRAM0);
 		//uint32_t pageCounts = (len / 0x10000) + (len % 0x10000) ? 1 : 0;

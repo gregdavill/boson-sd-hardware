@@ -29,7 +29,7 @@ if len(sys.argv) != 4:
     print("Usage: <bitstream> <bootloader> <firmware>")
     sys.exit()
 
-output_data = append(sys.argv[1], 0x90000-8)
+output_data = append(sys.argv[1], 0x90000-4)
 output_data += append(sys.argv[2], 0x10000)
 output_data += append(sys.argv[3], 0x20000)
 

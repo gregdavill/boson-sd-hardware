@@ -1,6 +1,6 @@
 
 firmware.elf: sections.lds start.s firmware.c FatFs/ff.c FatFs/ff.h FatFs/ffconf.h FatFs/sdmmc.c FatFs/diskio.h FatFs/ffunicode.c
-	riscv32-unknown-elf-gcc -march=rv32imc -Xlinker -Map=output.map -Wl,-Bstatic,-T,sections.lds,--strip-debug,--no-check-sections -fpack-struct -ffreestanding -nostartfiles -g -o firmware.elf start.s firmware.c FatFs/ff.c FatFs/sdmmc.c FatFs/ffunicode.c FatFs/sd_cache.c FatFs/rb_tree.c crc32.c
+	riscv32-unknown-elf-gcc -march=rv32imc -Xlinker -Map=output.map -Wl,-Bstatic,-T,sections.lds,--strip-debug,--no-check-sections -fpack-struct -ffreestanding -nostartfiles -g  -O2 -o firmware.elf start.s firmware.c FatFs/ff.c FatFs/sdmmc.c FatFs/ffunicode.c FatFs/sd_cache.c FatFs/rb_tree.c crc32.c profiler.c
 
 firmware.hex: firmware.elf
 	riscv32-unknown-elf-objcopy -O verilog firmware.elf firmware.hex
