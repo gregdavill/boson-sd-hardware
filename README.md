@@ -5,7 +5,7 @@
 A Small FPGA based board. Designed to connect to a FLIR Boson Camera, and save images from the camera to a microSD card.
 
 
-![alt-text](img/Boson320_assembled_001.jpg "Assembled Prototype")
+![alt-text](docs/img/Boson320_assembled_001.jpg "Assembled Prototype")
 hw 1_02 is the latest functionaly hardware that fits just behind the back of the Boson. (Pictured Above)
 
 ## Project Status:
